@@ -212,6 +212,19 @@ async function comparePassword(password, hash) {
     return await bcrypt.compare(password, hash);
 }
 
+// Find an exisiting user, similar to authenticate but has its dedicated function for readability
+async function findUser(username) {
+    try {
+        const request = pool.request();
+        const response = await request.input('Username', sql.NVarChar, username)
+                     .query('SELECT * FROM tblUsers WHERE Username = @Username');
+        return response.recordset[0]; // will be null or something now :)
+    } catch (error) {
+        console.log(error)
+        throw error;
+    }
+}
+
 // Add a new user
 async function addUser(newUser) {
     try {
@@ -299,12 +312,14 @@ function isAuthenticated(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized' });
 }
 
-// Registration route with input validation
+// Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
-        const { emp_id, firstname, lastname, username, password, userType } = req.body;
+        const { firstname, lastname, username, password, userType } = req.body;
+        // generate a new GUID
+        const emp_id = uuid.v4();
         // Create a new User instance
-        const newUser = new User(emp_id, firstname, lastname, username, password, userType);
+        const newUser = new User(emp_id, firstname, lastname, username, password, false);
         // Save the new user to the database
         await addUser(newUser);
         res.status(201).json({ message: 'User registered successfully' });
@@ -317,8 +332,23 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
+// Availability route (findUser)
+app.get('/api/users', async (req, res) => {
+    try {
+        const { username } = req.query;
+        const user = await findUser(username);
+        console.log(user);
+        if(!user) {
+            res.status(200).json({ message: 'Username is available!' });
+            return;
+        }
+        res.status(400).json({ error: 'Account with that username already exists' });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+})
 
-// Login route with input validation
+// Login route with frontend input validation
 app.post('/api/sessions', async (req, res) => {
     try {
         const { username, password } = req.body;
