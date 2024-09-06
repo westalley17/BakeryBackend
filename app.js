@@ -1,7 +1,6 @@
 // HINT: anything that says ID... just get ready for GUIDs
 
 /*
-
     HERE LIES ALL THE CLASSES THAT WE WILL BE MAKING OBJECTS OUT OF THROUGHOUT
     OUR BACKEND... it's a lot
     
@@ -23,8 +22,6 @@
 
     Session Class:
     - The `Session` class manages session information for each logged-in user. It's linked to a user by `EmployeeID`. Whenever a user logs in or out, a new session is created or removed.
-
-
 */
 
 // User class to group our user data together.
@@ -42,7 +39,7 @@ class User {
 class Session {
     constructor(sess_id, emp_id) {
         this.SessionID = sess_id; // Primary
-        this.EmployeeID = emp_id; // Foreign to tblUsers
+        this.EmployeeID = emp_id; // Foreign to tblUser
     }
 }
 
@@ -168,10 +165,10 @@ async function createTables() {
         await poolConnect; // Ensure the pool is connected
         const request = pool.request();
 
-        // Create tblUsers
+        // Create tblUser
         await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUsers')
-            CREATE TABLE tblUsers (
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUser')
+            CREATE TABLE tblUser (
                 EmployeeID NVARCHAR(50) PRIMARY KEY,
                 FirstName NVARCHAR(50) NOT NULL,
                 LastName NVARCHAR(50) NOT NULL,
@@ -182,17 +179,17 @@ async function createTables() {
         `);
 
         // IDCreateDate DATETIME DEFAULT GETDATE(), use this for sprint 2 or 3 in case we need to add it to the sessions table
-        // Create tblSessions
+        // Create tblSession
         await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSessions')
-            CREATE TABLE tblSessions (
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSession')
+            CREATE TABLE tblSession (
                 SessionID NVARCHAR(50) PRIMARY KEY,
                 EmployeeID NVARCHAR(50) NOT NULL,
-                FOREIGN KEY (EmployeeID) REFERENCES tblUsers(EmployeeID) ON DELETE CASCADE
+                FOREIGN KEY (EmployeeID) REFERENCES tblUser(EmployeeID) ON DELETE CASCADE
             )
         `);
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
-
+        
 
     } catch (error) {
         console.log(error)
@@ -215,9 +212,10 @@ async function comparePassword(password, hash) {
 // Find an exisiting user, similar to authenticate but has its dedicated function for readability
 async function findUser(username) {
     try {
+        console.log(username)
         const request = pool.request();
         const response = await request.input('Username', sql.NVarChar, username)
-                     .query('SELECT * FROM tblUsers WHERE Username = @Username');
+                     .query('SELECT * FROM tblUser WHERE Username = @Username');
         return response.recordset[0]; // will be null or something now :)
     } catch (error) {
         console.log(error)
@@ -236,7 +234,7 @@ async function addUser(newUser) {
                      .input('Username', sql.NVarChar, newUser.Username)
                      .input('Password', sql.NVarChar, newUser.Password)
                      .input('UserType', sql.Bit, newUser.UserType)
-                     .query('INSERT INTO tblUsers (EmployeeID, FirstName, LastName, Username, Password, UserType) VALUES (@EmployeeID, @FirstName, @LastName, @Username, @Password, @UserType)');
+                     .query('INSERT INTO tblUser (EmployeeID, FirstName, LastName, Username, Password, UserType) VALUES (@EmployeeID, @FirstName, @LastName, @Username, @Password, @UserType)');
     } catch (error) {
         console.log(error)
         throw error;
@@ -248,7 +246,7 @@ async function authenticateUser(username, password) {
     try {
         const request = pool.request();
         const result = await request.input('Username', sql.NVarChar, username)
-                                   .query('SELECT * FROM tblUsers WHERE Username = @Username');
+                                   .query('SELECT * FROM tblUser WHERE Username = @Username');
         if (result.recordset.length === 0) {
             return null;
         }
@@ -271,7 +269,7 @@ async function addSession(SessionID, EmployeeID) {
         const request = pool.request();
         await request.input('SessionID', sql.NVarChar, SessionID)
                      .input('EmployeeID', sql.NVarChar, EmployeeID)
-                     .query('INSERT INTO tblSessions (SessionID, EmployeeID) VALUES (@SessionID, @EmployeeID)');
+                     .query('INSERT INTO tblSession (SessionID, EmployeeID) VALUES (@SessionID, @EmployeeID)');
     } catch (error) {
         throw error;
     }
@@ -282,7 +280,7 @@ async function removeSession(SessionID) {
     try {
         const request = pool.request();
         await request.input('SessionID', sql.NVarChar, SessionID)
-                     .query('DELETE FROM tblSessions WHERE SessionID = @SessionID');
+                     .query('DELETE FROM tblSession WHERE SessionID = @SessionID');
     } catch (error) {
         throw error;
     }
@@ -293,7 +291,7 @@ async function getUserBySession(SessionID) {
     try {
         const request = pool.request();
         const result = await request.input('SessionID', sql.NVarChar, SessionID)
-                                   .query('SELECT U.FirstName, U.LastName, U.Email FROM tblSessions S JOIN tblUsers U ON S.Email = U.Email WHERE S.SessionID = @SessionID');
+                                   .query('SELECT U.FirstName, U.LastName, U.Email FROM tblSession S JOIN tblUser U ON S.Email = U.Email WHERE S.SessionID = @SessionID');
         if (result.recordset.length === 0) {
             return null;
         }
@@ -317,9 +315,9 @@ app.post('/api/users', async (req, res) => {
     try {
         const { firstname, lastname, username, password, userType } = req.body;
         // generate a new GUID
-        const emp_id = uuid.v4();
+        // const emp_id = uuid.v4();
         // Create a new User instance
-        const newUser = new User(emp_id, firstname, lastname, username, password, false);
+        const newUser = new User(firstname, lastname, username, password, false);
         // Save the new user to the database
         await addUser(newUser);
         res.status(201).json({ message: 'User registered successfully' });
@@ -337,7 +335,6 @@ app.get('/api/users', async (req, res) => {
     try {
         const { username } = req.query;
         const user = await findUser(username);
-        console.log(user);
         if(!user) {
             res.status(200).json({ message: 'Username is available!' });
             return;
@@ -359,7 +356,7 @@ app.post('/api/sessions', async (req, res) => {
         }
         // Store the emp_id in the session
         req.session.user = { emp_id: user.Emp_ID };
-        // Create a session entry in tblSessions
+        // Create a session entry in tblSession
         await addSession(req.sessionID, user.Emp_ID);
         res.status(200).json({ message: 'Logged in successfully' });
     } catch (error) {
@@ -371,7 +368,7 @@ app.post('/api/sessions', async (req, res) => {
 app.delete('/api/sessions', isAuthenticated, async (req, res) => {
     try {
         const sessionID = req.sessionID;
-        // Remove the session entry from tblSessions
+        // Remove the session entry from tblSession
         await removeSession(sessionID);
         // Destroy the session
         req.session.destroy(err => {
