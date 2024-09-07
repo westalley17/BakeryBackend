@@ -302,12 +302,26 @@ async function getUserBySession(SessionID) {
     }
 }
 
-// Middleware to check authentication
-function isAuthenticated(req, res, next) {
-    if (req.session && req.session.user) {
-        return next();
+// Checks to make sure User had UserType of 1 (aka is a manager)
+async function authenticateManager(username, password) {
+    try {
+        const request = pool.request();
+        const result = await request.input('Username', sql.NVarChar, username)
+                                   .query('SELECT * FROM tblUser WHERE Username = @Username AND UserType = 1');
+        if (result.recordset.length === 0) {
+            return null; // user is not a manager
+        }
+        const user = result.recordset[0];
+        const isValid = await comparePassword(password, user.Password);
+        if (!isValid) {
+            return null;
+        }
+
+        // Create a User object with the retrieved data
+        return new User(user.EmployeeID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
+    } catch (error) {
+        throw error;
     }
-    return res.status(401).json({ error: 'Unauthorized' });
 }
 
 // Registration route with frontend input validation
@@ -345,8 +359,8 @@ app.get('/api/users', async (req, res) => {
     }
 })
 
-// Login route with frontend input validation
-app.post('/api/sessions', async (req, res) => {
+// Login route for employee with frontend input validation
+app.post('/api/sessions/employee', async (req, res) => {
     try {
         const { username, password } = req.body;
         // Authenticate the user
@@ -354,38 +368,52 @@ app.post('/api/sessions', async (req, res) => {
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-        // Store the emp_id in the session
-        req.session.user = { emp_id: user.Emp_ID };
         // Create a session entry in tblSession
-        await addSession(req.sessionID, user.Emp_ID);
-        res.status(200).json({ message: 'Logged in successfully' });
+        const newSession = uuid.v4();
+        await addSession(newSession, user.Emp_ID);
+        res.status(200).json({ message: 'Logged in successfully', session: newSession });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Login route for manager with frontend input validation
+app.post('/api/sessions/manager', async (req, res) => {
+    try {
+        const { username, password, managerID } = req.body;
+        if(managerID != 123456) { // CHANGE THIS TO BE MORE SECURE IN A LATER SPRINT
+            return res.status(401).json({error: 'Invalid Manager ID'});
+        }
+        // Authenticate the user
+        const user = await authenticateManager(username, password);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials for manager access' });
+        }
+        // Create a session entry in tblSession
+        const newSession = uuid.v4();
+        await addSession(newSession, user.Emp_ID);
+        res.status(200).json({ message: 'Logged in successfully', session: newSession });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Logout route
-app.delete('/api/sessions', isAuthenticated, async (req, res) => {
+app.delete('/api/sessions', async (req, res) => {
     try {
-        const sessionID = req.sessionID;
+        const { sessionID } = req.body;
         // Remove the session entry from tblSession
         await removeSession(sessionID);
         // Destroy the session
-        req.session.destroy(err => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to log out' });
-            }
-            res.clearCookie('connect.sid'); // ????
-            res.status(200).json({ message: 'Logged out successfully' });
-        });
+        res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 
-// Protected route example
-app.get('/api/dashboard', isAuthenticated, async (req, res) => {
+// Saved-session login thingy :)
+app.get('/api/sessions', async (req, res) => {
     try {
         // Get the user based on the session ID
         const user = await getUserBySession(req.sessionID);
