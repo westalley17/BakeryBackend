@@ -226,13 +226,13 @@ async function findUser(username) {
 // Add a new user
 async function addUser(newUser) {
     try {
-        const hashedPassword = await hashPassword(newUser.Password); // this was breaking the hell out of the runtime but should be extremely simple fix.
+        const hashedPassword = await hashPassword(newUser.Password);
         const request = pool.request();
         await request.input('EmployeeID', sql.NVarChar, newUser.Emp_ID)
                      .input('FirstName', sql.NVarChar, newUser.FirstName)
                      .input('LastName', sql.NVarChar, newUser.LastName)
                      .input('Username', sql.NVarChar, newUser.Username)
-                     .input('Password', sql.NVarChar, newUser.Password)
+                     .input('Password', sql.NVarChar, hashedPassword)
                      .input('UserType', sql.Bit, newUser.UserType)
                      .query('INSERT INTO tblUser (EmployeeID, FirstName, LastName, Username, Password, UserType) VALUES (@EmployeeID, @FirstName, @LastName, @Username, @Password, @UserType)');
     } catch (error) {
@@ -313,11 +313,11 @@ function isAuthenticated(req, res, next) {
 // Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
-        const { firstname, lastname, username, password, userType } = req.body;
+        const { firstname, lastname, username, password, usertype } = req.body;
         // generate a new GUID
-        // const emp_id = uuid.v4();
+        const emp_id = uuid.v4();
         // Create a new User instance
-        const newUser = new User(firstname, lastname, username, password, false);
+        const newUser = new User(emp_id, firstname, lastname, username, password, usertype);
         // Save the new user to the database
         await addUser(newUser);
         res.status(201).json({ message: 'User registered successfully' });
