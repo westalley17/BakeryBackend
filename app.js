@@ -245,7 +245,7 @@ async function createTables() {
             CREATE TABLE tblProductCategory (
                 ProductCategoryID NVARCHAR(50) PRIMARY KEY,
                 Name NVARCHAR(50) NOT NULL,
-                Description NVARCHAR(50) NOT NULL,
+                Description NVARCHAR(50) NOT NULL
             )
         `);
         
