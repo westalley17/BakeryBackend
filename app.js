@@ -197,7 +197,7 @@ async function createTables() {
             CREATE TABLE tblIngredientCategory (
                 IngredientCategoryID NVARCHAR(50) PRIMARY KEY,
                 Name NVARCHAR(50) NOT NULL,
-                Description NVARCHAR(50) NOT NULL,
+                Description NVARCHAR(50) NOT NULL
             )
         `);
 
@@ -212,8 +212,8 @@ async function createTables() {
                 Measurement NVARCHAR(50) NOT NULL,
                 MaxAmount FLOAT(6,2) NOT NULL,
                 ReorderAmount FLOAT(6,2) NOT NULL,
-                MinAmount FLOAT(6,2) NOT NULL
-                Allergen BIT NOT NULL
+                MinAmount FLOAT(6,2) NOT NULL,
+                Allergen BIT NOT NULL,
                 FOREIGN KEY (IngredientCategoryID) REFERENCES tblIngredientCategory(IngredientCategoryID) ON DELETE CASCADE
             )
         `);
@@ -282,8 +282,8 @@ async function createTables() {
                 RecipeID NVARCHAR(50) PRIMARY KEY,
                 Name NVARCHAR(50) NOT NULL,
                 Notes NVARCHAR(50),
-                YieldAmount INT NOT NULL
-                ProductID NVARCHAR(50) NOT NULL
+                YieldAmount INT NOT NULL,
+                ProductID NVARCHAR(50) NOT NULL,
                 PrepTime TIME NOT NULL,
                 BakeTime TIME NOT NULL,
                 FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID) ON DELETE CASCADE
