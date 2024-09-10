@@ -21,7 +21,7 @@
     - It might be expanded with routes to fetch, add, or update ingredients.
 
     Session Class:
-    - The `Session` class manages session information for each logged-in user. It's linked to a user by `EmployeeID`. Whenever a user logs in or out, a new session is created or removed.
+    - The `Session` class manages session information for each logged-in user. It's linked to a user by `userID`. Whenever a user logs in or out, a new session is created or removed.
 */
 
 // User class to group our user data together.
@@ -39,7 +39,7 @@ class User {
 class Session {
     constructor(sess_id, emp_id) {
         this.SessionID = sess_id; // Primary
-        this.EmployeeID = emp_id; // Foreign to tblUser
+        this.userID = emp_id; // Foreign to tblUser
     }
 }
 
@@ -96,7 +96,7 @@ class InventoryItem {
     constructor(entry_id, quantity, emp_id, notes, cost, addDate, expDate, PO_num, recipe_id) {
         this.EntryID = entry_id;
         this.Quantity = quantity;
-        this.EmployeeID = emp_id;
+        this.userID = emp_id;
         this.Notes = notes;
         this.Cost = cost;
         this.AddDate = addDate;
@@ -169,7 +169,7 @@ async function createTables() {
         await request.query(`
             IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUser')
             CREATE TABLE tblUser (
-                EmployeeID NVARCHAR(50) PRIMARY KEY,
+                userID NVARCHAR(50) PRIMARY KEY,
                 FirstName NVARCHAR(50) NOT NULL,
                 LastName NVARCHAR(50) NOT NULL,
                 Username NVARCHAR(20) NOT NULL,
@@ -184,8 +184,8 @@ async function createTables() {
             IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSession')
             CREATE TABLE tblSession (
                 SessionID NVARCHAR(50) PRIMARY KEY,
-                EmployeeID NVARCHAR(50) NOT NULL,
-                FOREIGN KEY (EmployeeID) REFERENCES tblUser(EmployeeID) ON DELETE CASCADE
+                userID NVARCHAR(50) NOT NULL,
+                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
             )
         `);
         
@@ -398,13 +398,13 @@ async function addUser(newUser) {
     try {
         const hashedPassword = await hashPassword(newUser.Password);
         const request = pool.request();
-        await request.input('EmployeeID', sql.NVarChar, newUser.Emp_ID)
+        await request.input('userID', sql.NVarChar, newUser.Emp_ID)
                      .input('FirstName', sql.NVarChar, newUser.FirstName)
                      .input('LastName', sql.NVarChar, newUser.LastName)
                      .input('Username', sql.NVarChar, newUser.Username)
                      .input('Password', sql.NVarChar, hashedPassword)
                      .input('UserType', sql.Bit, newUser.UserType)
-                     .query('INSERT INTO tblUser (EmployeeID, FirstName, LastName, Username, Password, UserType) VALUES (@EmployeeID, @FirstName, @LastName, @Username, @Password, @UserType)');
+                     .query('INSERT INTO tblUser (userID, FirstName, LastName, Username, Password, UserType) VALUES (@userID, @FirstName, @LastName, @Username, @Password, @UserType)');
     } catch (error) {
         console.log(error)
         throw error;
@@ -427,19 +427,19 @@ async function authenticateUser(username, password) {
         }
 
         // Create a User object with the retrieved data
-        return new User(user.EmployeeID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
+        return new User(user.userID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
     } catch (error) {
         throw error;
     }
 }
 
 // Add a new session
-async function addSession(SessionID, EmployeeID) {
+async function addSession(SessionID, userID) {
     try {
         const request = pool.request();
         await request.input('SessionID', sql.NVarChar, SessionID)
-                     .input('EmployeeID', sql.NVarChar, EmployeeID)
-                     .query('INSERT INTO tblSession (SessionID, EmployeeID) VALUES (@SessionID, @EmployeeID)');
+                     .input('userID', sql.NVarChar, userID)
+                     .query('INSERT INTO tblSession (SessionID, userID) VALUES (@SessionID, @userID)');
     } catch (error) {
         throw error;
     }
@@ -466,7 +466,7 @@ async function getUserBySession(SessionID) {
             return null;
         }
         const user = result.recordset[0];
-        return new User(user.EmployeeID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
+        return new User(user.userID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
     } catch (error) {
         throw error;
     }
@@ -488,7 +488,7 @@ async function authenticateManager(username, password) {
         }
 
         // Create a User object with the retrieved data
-        return new User(user.EmployeeID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
+        return new User(user.userID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
     } catch (error) {
         throw error;
     }
