@@ -106,6 +106,18 @@ class InventoryItem {
     }
 }
 
+class RecipeItem {
+    constructior(recipe_id, name, notes, yield_amount, product_id, prep_time, bake_time) {
+        this.RecipeID = recipe_id;
+        this.Name = name;
+        this.Notes = notes;
+        this.YieldAmount = yield_amount;
+        this.ProductID = product_id;
+        this.PrepTime = prep_time;
+        this.BakeTime = bake_time;
+    }
+}
+
 // Required modules
 const express = require('express');
 const session = require('express-session');
@@ -494,6 +506,31 @@ async function authenticateManager(username, password) {
     }
 }
 
+//Get Recipe Helper
+async function getRecipeFromDb(recipeName) {
+    try {
+        //Connecting
+        await sql.connect(dbConfig);
+
+        //Query to fetch
+        const result = await request.input('Recipe', sql.NVarChar, recipe)
+                                    .query`SELECT * FROM tbleRecipe WHERE Name = ${recipeName}`;
+
+        //Checks to make sure it exists
+        if (result.recordset.length == 0) {
+            return null; //Doesn't exist
+        }
+        
+        //Returns the whole object
+        const recipe = result.recordset[0];
+        return new RecipeItem(recipe.RecipeID, recipe.Name, recipe.Notes, recipe.YieldAmount, recipe.ProductID, recipe.PrepTime, recipe.BakeTime);
+
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
 // Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
@@ -595,6 +632,75 @@ app.get('/api/sessions', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+//Recipe GET
+app.get('/api/recipe', async (req, res) => {
+    recipeName = req.params.name;
+    if(recipeName){
+        try {
+            const recipe = await getRecipeFromDb(recipeName);
+
+            if (recipe) {
+                res.status(200).json(recipe);   //Sends as a JSON response
+            } else {
+                res.status(404).send('Recipe not found');
+            }
+        } catch (error) {
+            res.status(500).send('Error fetching recipe');
+        }
+    } else {
+        res.status(500).json({ error: 'Internal serval error' });
+    }
+});
+
+//RecipeNames GET
+app.get('/recipe/:name    ', async (req, res) => {
+    const recipeName = req.params.name;
+    if(recipeName) {
+        try {
+            const recipe = await getRecipeFromDb(recipeName);
+
+            if(recipe) {
+                res.status(200).json(recipe.Name)
+            } else {
+                res.status(404).send('Recipe Name not found');
+            }
+        } catch (error) {
+            res.status(500).send('Error fetching recipe name');
+        }
+    } else {
+        res.status(500).json({ error: 'Internal serval error' });
+    }
+});
+
+
+//IngredientName - Get
+app.get('api/ingredientNames', async (req, res) => {
+    try {
+        const pool = await mssql.connect(dbConfig);
+        const result = await pool.request().query('SELECT Description FROM Ingredients');
+        res.json(result.recordset.map(item => item.Description));
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+
+//Ingredient - GE
+app.get('/ingredient/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const pool = await mssql.connect(dbConfig);
+        const result = await pool.request().input('IngredientID', mssql.NVarChar, id)
+            .query('SELECT * FROM Ingredients WHERE IngredientID = @IngredientID');
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ message: 'Ingredient not found' });
+        }
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});                        
 
 // Initialize the database tables and start the server
 createTables()
