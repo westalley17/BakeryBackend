@@ -188,6 +188,176 @@ async function createTables() {
                 FOREIGN KEY (EmployeeID) REFERENCES tblUser(EmployeeID) ON DELETE CASCADE
             )
         `);
+        
+
+        // If you run into trouble with any of the next 12 tables please yell at Dan  -Dan
+        // Create tblIngredientCategory
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredientCategory')
+            CREATE TABLE tblIngredientCategory (
+                IngredientCategoryID NVARCHAR(50) PRIMARY KEY,
+                Name NVARCHAR(50) NOT NULL,
+                Description NVARCHAR(50) NOT NULL
+            )
+        `);
+
+        // Create tblIngredient
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredient')
+            CREATE TABLE tblIngredient (
+                IngredientID NVARCHAR(50) PRIMARY KEY,
+                Name NVARCHAR(50) NOT NULL,
+                Description NVARCHAR(50) NOT NULL,
+                IngredientCategoryID NVARCHAR(50) NOT NULL,
+                Measurement NVARCHAR(50) NOT NULL,
+                MaxAmount FLOAT(6,2) NOT NULL,
+                ReorderAmount FLOAT(6,2) NOT NULL,
+                MinAmount FLOAT(6,2) NOT NULL,
+                Allergen BIT NOT NULL,
+                FOREIGN KEY (IngredientCategoryID) REFERENCES tblIngredientCategory(IngredientCategoryID) ON DELETE CASCADE
+            )
+        `);
+
+        // Create tblInventory
+        // Actually how much we have of each ingredient
+        // PONumber might go depending on scope
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblInventory')
+            CREATE TABLE tblInventory (
+                EntityID NVARCHAR(50) PRIMARY KEY,
+                IngredientID NVARCHAR(50) NOT NULL,
+                Quantity FLOAT(6,2) NOT NULL,
+                EmployeeID NVARCHAR(50) NOT NULL,
+                Notes NVARCHAR(50),
+                Cost FLOAT(6,2) NOT NULL,
+                CreateDateTime DATETIME NOT NULL,
+                ExpireDateTime NOT NULL,
+                PONumber NVARCHAR(50),
+                FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID) ON DELETE CASCADE,
+                FOREIGN KEY (EmployeeID) REFERENCES tblUser(EmployeeID)
+            )
+        `);
+        
+
+        // Create tblProductCategory
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProductCategory')
+            CREATE TABLE tblProductCategory (
+                ProductCategoryID NVARCHAR(50) PRIMARY KEY,
+                Name NVARCHAR(50) NOT NULL,
+                Description NVARCHAR(50) NOT NULL
+            )
+        `);
+        
+        // Create tblProduct
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProduct')
+            CREATE TABLE tblProduct (
+                ProductID NVARCHAR(50) PRIMARY KEY,
+                Name NVARCHAR(50) NOT NULL,
+                Description NVARCHAR(50) NOT NULL,
+                ProductCategoryID NVARCHAR(50) NOT NULL,
+                FOREIGN KEY (ProductCategoryID) REFERENCES tblProductCategory(ProductCategory) ON DELETE CASCADE
+            )
+        `);
+
+        // Create tblStock
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStock')
+            CREATE TABLE tblStock (
+                StockID NVARCHAR(50) PRIMARY KEY,
+                ProductID NVARCHAR(50) NOT NULL,
+                CreateDateTime DATETIME NOT NULL,
+                ExpireDateTime DATETIME NOT NULL,
+                Amount FLOAT(6,2),
+                FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID)
+            )
+        `);
+
+        // Create tblRecipe
+        // Recipe References a Product to make, which references a ProductCategory
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipe')
+            CREATE TABLE tblRecipe (
+                RecipeID NVARCHAR(50) PRIMARY KEY,
+                Name NVARCHAR(50) NOT NULL,
+                Notes NVARCHAR(50),
+                YieldAmount INT NOT NULL,
+                ProductID NVARCHAR(50) NOT NULL,
+                PrepTime TIME NOT NULL,
+                BakeTime TIME NOT NULL,
+                FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID) ON DELETE CASCADE
+            )
+        `);
+
+        // Create tblStorefront
+        // Keeps count of how much we have to sell out on the storefront using trigger to get count of tblStock, maybe not needed?
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStorefront')
+            CREATE TABLE tblStorefront (
+                StorefrontID NVARCHAR(50) PRIMARY KEY,
+                CurrentAmount INT NOT NULL,
+                RestockAmount INT NOT NULL,
+                MinAmount INT NOT NULL
+            )
+        `);
+        
+        // Create tblEquipment
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEquipment')
+            CREATE TABLE tblEquipment (
+                EquipmentID NVARCHAR(50) PRIMARY KEY,
+                Name NVARCHAR(50) NOT NULL,
+                Description NVARCHAR(50) NOT NULL,
+                Notes NVARCHAR(50) NOT NULL
+            )
+        `);
+
+        // Create tblKitchenEquipment
+        // Provides similar relationship as tblInventory does to tblIngredient
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblKitchenEquipment')
+            CREATE TABLE tblKitchenEquipment (
+                KitchenEquipmentID NVARCHAR(50) PRIMARY KEY,
+                EquipmentID NVARCHAR(50) NOT NULL,
+                Name NVARCHAR(50) NOT NULL,
+                Status NVARCHAR(50) NOT NULL,
+                SerialNumber NVARCHAR(50) NOT NULL,
+                Notes NVARCHAR(50),
+                FOREIGN KEY (EquipmentID) REFERENCES tblEquipment(EquipmentID)
+            )
+        `);
+        
+        // Create tblRecipeIngredient
+        // Connects tblRecipe and tblIngredient, says what ingredients go to what recipe
+        // foreign constraints for these next two might be weird
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeIngredient')
+            CREATE TABLE tblRecipeIngredient (
+                RecipeID NVARCHAR(50) NOT NULL,
+                IngredientID NVARCHAR(50) NOT NULL,
+                Quantity FLOAT(6,2) NOT NULL,
+                PRIMARY KEY (RecipeID, IngredientID),
+                FOREIGN KEY (RecioeID) REFERENCES tblRecipe(RecipeID),
+                FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
+            )
+        `);
+        
+        // Create tblRecipeEquipment
+        // Same function as tblRecipeIngredient, but for linking tblEquipment
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeEquipment')
+            CREATE TABLE tblRecipeEquipment (
+                RecipeID NVARCHAR(50) NOT NULL,
+                EquipmentID NVARCHAR(50) NOT NULL,
+                Quantity FLOAT(6,2) NOT NULL,
+                PRIMARY KEY (RecipeID, EquipmentID),
+                FOREIGN KEY (RecioeID) REFERENCES tblRecipe(RecipeID),
+                FOREIGN KEY (EquipmentID) REFERENCES tlbEquipment(EquipmentID)
+            )
+        `);
+        
+
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
         
 
