@@ -182,29 +182,360 @@ async function createTables() {
         await poolConnect; // Ensure the pool is connected
         const request = pool.request();
 
-        // Create tblUser
-        // Create tblUser
-		await request.query(`
-			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUser')
-			CREATE TABLE tblUser (
-				UserID NVARCHAR(50) PRIMARY KEY,
-				FirstName NVARCHAR(50) NOT NULL,
-				LastName NVARCHAR(50) NOT NULL,
-				Username NVARCHAR(20) NOT NULL,
-				Password NVARCHAR(255) NOT NULL,
-				UserType BIT NOT NULL
-			)
-		`);
-
-		// Create tblSession
-		await request.query(`
-			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSession')
-			CREATE TABLE tblSession (
-				SessionID NVARCHAR(50) PRIMARY KEY,
-				UserID NVARCHAR(50) NOT NULL,
-				FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
-			)
-		`);
+	    	//Create tblUser
+                await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUser')
+	            CREATE TABLE tblUser (
+	                userID NVARCHAR(50) PRIMARY KEY,
+	                FirstName NVARCHAR(64) NOT NULL,
+	                LastName NVARCHAR(64) NOT NULL,
+	                Username NVARCHAR(30) NOT NULL,
+	                Password NVARCHAR(250) NOT NULL,
+	                userType BIT NOT NULL,
+	                UNIQUE (Username)
+	            )
+	        `);
+		
+	        //Create tblAddressType
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblAddressType')
+	            CREATE TABLE tblAddressType (
+	                typeID NVARCHAR(50) PRIMARY KEY,
+	                description NVARCHAR(50),
+	                active BIT
+	            )
+	        `);
+	
+	        //Create tblEmailType
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEmailType')
+	            CREATE TABLE tblEmailType (
+	                typeID NVARCHAR(50) PRIMARY KEY,
+	                description NVARCHAR(50),
+	                active BIT
+	            )
+	        `);
+	
+	        //Create tblPayType
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPayType')
+	            CREATE TABLE tblPayType (
+	                typeID NVARCHAR(50) PRIMARY KEY,
+	                description NVARCHAR(50)
+	            )
+	        `);
+	
+	        //Create tblPhoneNumberTypes
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPhoneNumberTypes')
+	            CREATE TABLE tblPhoneNumberTypes (
+	                typeID NVARCHAR(50) PRIMARY KEY,
+	                description NVARCHAR(50),
+	                active BIT
+	            )
+	        `);
+	
+	        //Create tblRaceType
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRaceType')
+	            CREATE TABLE tblRaceType (
+	                typeID NVARCHAR(50) PRIMARY KEY,
+	                description NVARCHAR(50)
+	            )
+	        `);
+	
+	        //Create tblState
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblState')
+	            CREATE TABLE tblState (
+	                stateID NVARCHAR(50) PRIMARY KEY,
+	                description NVARCHAR(50)
+	            )
+	        `);
+	
+	        //Create tblBiWeek
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblBiWeek')
+	            CREATE TABLE tblBiWeek (
+	                biWeekID NVARCHAR(50) PRIMARY KEY,
+	                biWeekNum INT,
+	                startDate DATE
+	            )
+	        `);
+	
+	        //Create tblWeek
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblWeek')
+	            CREATE TABLE tblWeek (
+	                weekID NVARCHAR(50) PRIMARY KEY,
+	                biWeekID NVARCHAR(50),
+	                weekNum INT,
+	                startDate DATE,
+	                FOREIGN KEY (biWeekID) REFERENCES tblBiWeek(biWeekID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblTimeType
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblTimeType')
+	            CREATE TABLE tblTimeType (
+	                typeID NVARCHAR(50) PRIMARY KEY,
+	                description NVARCHAR(50)
+	            )
+	        `);
+	
+	        //Create tblAge
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblAge')
+	            CREATE TABLE tblAge (
+	                ageID NVARCHAR(50) PRIMARY KEY,
+	                age NVARCHAR(3) NOT NULL,
+	                userID NVARCHAR(50),
+	                UNIQUE (userID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblDOB
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblDOB')
+	            CREATE TABLE tblDOB (
+	                dobID NVARCHAR(50) PRIMARY KEY,
+	                birthDate DATE NOT NULL,
+	                userID NVARCHAR(50),
+	                UNIQUE (userID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	
+	        //Create tblEmail
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEmail')
+	            CREATE TABLE tblEmail (
+	                emailID NVARCHAR(50) PRIMARY KEY,
+	                emailAddress NVARCHAR(320),
+	                userID NVARCHAR(50),
+	                typeID NVARCHAR(50),
+	                valid BIT,
+	                userType BIT,
+	                UNIQUE (emailAddress),
+	                FOREIGN KEY (typeID) REFERENCES tblEmailType(typeID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	
+	        //Create tblEmployeeTime
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEmployeeTime')
+	            CREATE TABLE tblEmployeeTime (
+	                empTypeID NVARCHAR(50) PRIMARY KEY,
+	                typeID NVARCHAR(50),
+	                userID NVARCHAR(50),
+	                FOREIGN KEY (typeID) REFERENCES tblTimeType(typeID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblGender
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblGender')
+	            CREATE TABLE tblGender (
+	                genderID NVARCHAR(50) PRIMARY KEY,
+	                genderType BIT NOT NULL,
+	                userID NVARCHAR(50),
+	                UNIQUE (userID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	
+	        //Create tblHireDate
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHireDate')
+	            CREATE TABLE tblHireDate (
+	                hireID NVARCHAR(50) PRIMARY KEY,
+	                hireDate DATE NOT NULL,
+	                userID NVARCHAR(50),
+	                UNIQUE (userID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblDay
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblDay')
+	            CREATE TABLE tblDay (
+	                dayID NVARCHAR(50) PRIMARY KEY,
+	                weekID NVARCHAR(50),
+	                dayNum INT,
+	                date DATE,
+	                FOREIGN KEY (weekID) REFERENCES tblWeek(weekID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	
+	        //Create tblHourly
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourly')
+	            CREATE TABLE tblHourly (
+	                typeID NVARCHAR(50),
+	                hourRate DECIMAL(5,2),
+	                FOREIGN KEY (typeID) REFERENCES tblPayType(typeID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblHourlyHoliday
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourlyHoliday')
+	            CREATE TABLE tblHourlyHoliday (
+	                typeID NVARCHAR(50),
+	                hourRateHoliday DECIMAL(5,2),
+	                FOREIGN KEY (typeID) REFERENCES tblPayType(typeID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblHourlyOvertime
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourlyOvertime')
+	            CREATE TABLE tblHourlyOvertime (
+	                typeID NVARCHAR(50),
+	                hourRateOT DECIMAL(5,2),
+	                FOREIGN KEY (typeID) REFERENCES tblPayType(typeID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblHoursWorkedDay
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHoursWorkedDay')
+	            CREATE TABLE tblHoursWorkedDay (
+	                hoursID NVARCHAR(50) PRIMARY KEY,
+	                userID NVARCHAR(50),
+	                dayID NVARCHAR(50),
+	                normalHours DECIMAL(5,2),
+	                overtimeHours DECIMAL(5,2),
+	                holidayHours DECIMAL(5,2),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE,
+	                FOREIGN KEY (dayID) REFERENCES tblDay(dayID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblPay
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPay')
+	            CREATE TABLE tblPay (
+	                payID NVARCHAR(50) PRIMARY KEY,
+	                userID NVARCHAR(50),
+	                typeID NVARCHAR(50),
+	                userType BIT,
+	                UNIQUE (userID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE,
+	                FOREIGN KEY (typeID) REFERENCES tblPayType(typeID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblPhoneNumber
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPhoneNumber')
+	            CREATE TABLE tblPhoneNumber (
+	                phoneNumberID NVARCHAR(50) PRIMARY KEY,
+	                areaCode NVARCHAR(3),
+	                Number NVARCHAR(7),
+	                typeID NVARCHAR(50),
+	                valid BIT,
+	                userID NVARCHAR(50),
+	                userType BIT,
+	                FOREIGN KEY (typeID) REFERENCES tblPhoneNumberTypes(typeID) ON DELETE CASCADE,
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblRace
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRace')
+	            CREATE TABLE tblRace (
+	                raceID NVARCHAR(50) PRIMARY KEY,
+	                typeID NVARCHAR(50),
+	                userID NVARCHAR(50),
+	                FOREIGN KEY (typeID) REFERENCES tblRaceType(typeID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblSalary
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSalary')
+	            CREATE TABLE tblSalary (
+	                typeID NVARCHAR(50),
+	                salaryRate DECIMAL(10,2),
+	                FOREIGN KEY (typeID) REFERENCES tblPayType(typeID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Creaet tblSession
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSession')
+	            CREATE TABLE tblSession (
+	                sessionID NVARCHAR(50) PRIMARY KEY,
+	                userID NVARCHAR(50),
+	                userType BIT,
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	        
+	        //Create tblShift
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblShift')
+	            CREATE TABLE tblShift (
+	                shiftID NVARCHAR(50) PRIMARY KEY,
+	                dayID NVARCHAR(50),
+	                shiftDescription NVARCHAR(100) NOT NULL,
+	                available BIT NOT NULL,
+	                FOREIGN KEY (dayID) REFERENCES tblDay(dayID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	            //Create tblSSN
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSSN')
+	            CREATE TABLE tblSSN (
+	                ssnID NVARCHAR(50) PRIMARY KEY,
+	                SSN NVARCHAR(9) NOT NULL,
+	                userID NVARCHAR(50),
+	                UNIQUE (SSN),
+	                UNIQUE (userID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblUserAddress
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUserAddress')
+	            CREATE TABLE tblUserAddress (
+	                addressID NVARCHAR(50) PRIMARY KEY,
+	                address NVARCHAR(320),
+	                userID NVARCHAR(50),
+	                typeID NVARCHAR(50),
+	                stateID NVARCHAR(50),
+	                valid BIT,
+	                userType BIT,
+	                FOREIGN KEY (typeID) REFERENCES tblAddressType(typeID),
+	                FOREIGN KEY (stateID) REFERENCES tblState(stateID),
+	                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+	            )
+	        `);
+	
+	        //Create tblBiWeekDayConversion
+	        await request.query(`
+	            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblBiWeekDayConversion')
+	            CREATE TABLE tblBiWeekDayConversion (
+	                dayID NVARCHAR(50) PRIMARY KEY,
+	                biWeekNum INT,
+	                weekNum INT,
+	                dayNum INT
+	            )
+	        `);
 
 		// Create tblIngredientCategory
 		await request.query(`
