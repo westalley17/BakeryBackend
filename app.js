@@ -476,7 +476,7 @@ async function removeSession(SessionID) {
 async function removeRecipe(recipeID) {
     try {
         const request = pool.request();
-        await request.input('RecipeID', sql.NVarChar, RecipeID)
+        await request.input('RecipeID', sql.NVarChar, recipeID)
                         .query('DELETE FROM tblRecipe WHERE RecipeID = @RecipeID');
     } catch (error) {
         throw error;
@@ -720,36 +720,7 @@ app.delete('/api/recipe', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-})
-
-
-//IngredientName - Get
-app.get('api/ingredientNames', async (req, res) => {
-    try {
-        const pool = await mssql.connect(dbConfig);
-        const result = await pool.request().query('SELECT Description FROM Ingredients');
-        res.json(result.recordset.map(item => item.Description));
-    } catch (err) {
-        res.status(500).send(err.message);
-    }
-});
-
-
-//Ingredient - GE
-app.get('/ingredient/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const pool = await mssql.connect(dbConfig);
-        const result = await pool.request().input('IngredientID', mssql.NVarChar, id)
-            .query('SELECT * FROM Ingredients WHERE IngredientID = @IngredientID');
-        if (result.recordset.length === 0) {
-            return res.status(404).json({ message: 'Ingredient not found' });
-        }
-        res.json(result.recordset[0]);
-    } catch (err) {
-        res.status(500).send(err.message);
-    }
-});                        
+})                       
 
 // Initialize the database tables and start the server
 createTables()
