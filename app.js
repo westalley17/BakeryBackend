@@ -468,6 +468,16 @@ async function removeSession(SessionID) {
     }
 }
 
+async function removeRecipe(recipeID) {
+    try {
+        const request = pool.request();
+        await request.input('RecipeID', sql.NVarChar, RecipeID)
+                        .query('DELETE FROM tblRecipe WHERE RecipeID = @RecipeID');
+    } catch (error) {
+        throw error;
+    }
+}
+
 // Get user by session (used to automatically sign someone in based on SessionStorage for the web frontend, not sure about mobile just yet)
 async function getUserBySession(SessionID) {
     try {
@@ -690,6 +700,21 @@ app.get('/recipe', async (req, res) => {
         res.status(500).send('Error retrieving recipes');
     }
 });
+
+//Recipe DELETE
+app.delete('/api/recipe', async (req, res) => {
+    try {
+        const { recipeID } = req.body;
+
+        //Removes
+        await removeRecipe(recipeID);
+
+        //Destroys
+        res.status(200).json({ message: 'Recipe Successfully Deleted'});
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+})
 
 
 //IngredientName - Get
