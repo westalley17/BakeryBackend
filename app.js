@@ -26,8 +26,8 @@
 
 // User class to group our user data together.
 class User {
-    constructor(emp_id, firstname, lastname, username, password, userType) {
-        this.Emp_ID = emp_id; // Primary Key
+    constructor(user_id, firstname, lastname, username, password, userType) {
+        this.UserID = user_id; // Primary Key
         this.FirstName = firstname;
         this.LastName = lastname;
         this.Username = username;
@@ -39,7 +39,7 @@ class User {
 class Session {
     constructor(sess_id, emp_id) {
         this.SessionID = sess_id; // Primary
-        this.userID = emp_id; // Foreign to tblUser
+        this.UserID = emp_id; // Foreign to tblUser
     }
 }
 
@@ -183,197 +183,185 @@ async function createTables() {
         const request = pool.request();
 
         // Create tblUser
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUser')
-            CREATE TABLE tblUser (
-                userID NVARCHAR(50) PRIMARY KEY,
-                FirstName NVARCHAR(50) NOT NULL,
-                LastName NVARCHAR(50) NOT NULL,
-                Username NVARCHAR(20) NOT NULL,
-                Password NVARCHAR(255) NOT NULL,
-                UserType BIT NOT NULL
-            )
-        `);
+        // Create tblUser
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUser')
+			CREATE TABLE tblUser (
+				UserID NVARCHAR(50) PRIMARY KEY,
+				FirstName NVARCHAR(50) NOT NULL,
+				LastName NVARCHAR(50) NOT NULL,
+				Username NVARCHAR(20) NOT NULL,
+				Password NVARCHAR(255) NOT NULL,
+				UserType BIT NOT NULL
+			)
+		`);
 
-        // IDCreateDate DATETIME DEFAULT GETDATE(), use this for sprint 2 or 3 in case we need to add it to the sessions table
-        // Create tblSession
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSession')
-            CREATE TABLE tblSession (
-                SessionID NVARCHAR(50) PRIMARY KEY,
-                userID NVARCHAR(50) NOT NULL,
-                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
-            )
-        `);
-        
+		// Create tblSession
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSession')
+			CREATE TABLE tblSession (
+				SessionID NVARCHAR(50) PRIMARY KEY,
+				UserID NVARCHAR(50) NOT NULL,
+				FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE
+			)
+		`);
 
-        // If you run into trouble with any of the next 12 tables please yell at Dan  -Dan
-        // Create tblIngredientCategory
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredientCategory')
-            CREATE TABLE tblIngredientCategory (
-                IngredientCategoryID NVARCHAR(50) PRIMARY KEY,
-                Name NVARCHAR(50) NOT NULL,
-                Description NVARCHAR(50) NOT NULL
-            )
-        `);
+		// Create tblIngredientCategory
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredientCategory')
+			CREATE TABLE tblIngredientCategory (
+				IngredientCategoryID NVARCHAR(50) PRIMARY KEY,
+				Name NVARCHAR(50) NOT NULL,
+				Description NVARCHAR(50) NOT NULL
+			)
+		`);
 
-        // Create tblIngredient
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredient')
-            CREATE TABLE tblIngredient (
-                IngredientID NVARCHAR(50) PRIMARY KEY,
-                Name NVARCHAR(50) NOT NULL,
-                Description NVARCHAR(50) NOT NULL,
-                IngredientCategoryID NVARCHAR(50) NOT NULL,
-                Measurement NVARCHAR(50) NOT NULL,
-                MaxAmount FLOAT(6,2) NOT NULL,
-                ReorderAmount FLOAT(6,2) NOT NULL,
-                MinAmount FLOAT(6,2) NOT NULL,
-                Allergen BIT NOT NULL,
-                FOREIGN KEY (IngredientCategoryID) REFERENCES tblIngredientCategory(IngredientCategoryID) ON DELETE CASCADE
-            )
-        `);
+		// Create tblIngredient
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredient')
+			CREATE TABLE tblIngredient (
+				IngredientID NVARCHAR(50) PRIMARY KEY,
+				Name NVARCHAR(50) NOT NULL,
+				Description NVARCHAR(50) NOT NULL,
+				IngredientCategoryID NVARCHAR(50) NOT NULL,
+				Measurement NVARCHAR(50) NOT NULL,
+				MaxAmount DECIMAL(6,2) NOT NULL,
+				ReorderAmount DECIMAL(6,2) NOT NULL,
+				MinAmount DECIMAL(6,2) NOT NULL,
+				Allergen BIT NOT NULL,
+				FOREIGN KEY (IngredientCategoryID) REFERENCES tblIngredientCategory(IngredientCategoryID) ON DELETE CASCADE
+			)
+		`);
 
-        // Create tblInventory
-        // Actually how much we have of each ingredient
-        // PONumber might go depending on scope
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblInventory')
-            CREATE TABLE tblInventory (
-                EntityID NVARCHAR(50) PRIMARY KEY,
-                IngredientID NVARCHAR(50) NOT NULL,
-                Quantity FLOAT(6,2) NOT NULL,
-                EmployeeID NVARCHAR(50) NOT NULL,
-                Notes NVARCHAR(50),
-                Cost FLOAT(6,2) NOT NULL,
-                CreateDateTime DATETIME NOT NULL,
-                ExpireDateTime NOT NULL,
-                PONumber NVARCHAR(50),
-                FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID) ON DELETE CASCADE,
-                FOREIGN KEY (EmployeeID) REFERENCES tblUser(EmployeeID)
-            )
-        `);
-        
+		// Create tblInventory
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblInventory')
+			CREATE TABLE tblInventory (
+				EntityID NVARCHAR(50) PRIMARY KEY,
+				IngredientID NVARCHAR(50) NOT NULL,
+				Quantity DECIMAL(6,2) NOT NULL,
+				userID NVARCHAR(50) NOT NULL,
+				Notes NVARCHAR(50),
+				Cost DECIMAL(6,2) NOT NULL,
+				CreateDateTime DATETIME NOT NULL,
+				ExpireDateTime DATETIME NOT NULL,
+				PONumber NVARCHAR(50),
+				FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID) ON DELETE CASCADE,
+				FOREIGN KEY (userID) REFERENCES tblUser(userID)
+			)
+		`);
 
-        // Create tblProductCategory
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProductCategory')
-            CREATE TABLE tblProductCategory (
-                ProductCategoryID NVARCHAR(50) PRIMARY KEY,
-                Name NVARCHAR(50) NOT NULL,
-                Description NVARCHAR(50) NOT NULL
-            )
-        `);
-        
-        // Create tblProduct
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProduct')
-            CREATE TABLE tblProduct (
-                ProductID NVARCHAR(50) PRIMARY KEY,
-                Name NVARCHAR(50) NOT NULL,
-                Description NVARCHAR(50) NOT NULL,
-                ProductCategoryID NVARCHAR(50) NOT NULL,
-                FOREIGN KEY (ProductCategoryID) REFERENCES tblProductCategory(ProductCategory) ON DELETE CASCADE
-            )
-        `);
+		// Create tblProductCategory
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProductCategory')
+			CREATE TABLE tblProductCategory (
+				ProductCategoryID NVARCHAR(50) PRIMARY KEY,
+				Name NVARCHAR(50) NOT NULL,
+				Description NVARCHAR(50) NOT NULL
+			)
+		`);
 
-        // Create tblStock
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStock')
-            CREATE TABLE tblStock (
-                StockID NVARCHAR(50) PRIMARY KEY,
-                ProductID NVARCHAR(50) NOT NULL,
-                CreateDateTime DATETIME NOT NULL,
-                ExpireDateTime DATETIME NOT NULL,
-                Amount FLOAT(6,2),
-                FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID)
-            )
-        `);
+		// Create tblProduct
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProduct')
+			CREATE TABLE tblProduct (
+				ProductID NVARCHAR(50) PRIMARY KEY,
+				Name NVARCHAR(50) NOT NULL,
+				Description NVARCHAR(50) NOT NULL,
+				ProductCategoryID NVARCHAR(50) NOT NULL,
+				FOREIGN KEY (ProductCategoryID) REFERENCES tblProductCategory(ProductCategoryID) ON DELETE CASCADE
+			)
+		`);
 
-        // Create tblRecipe
-        // Recipe References a Product to make, which references a ProductCategory
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipe')
-            CREATE TABLE tblRecipe (
-                RecipeID NVARCHAR(50) PRIMARY KEY,
-                Name NVARCHAR(50) NOT NULL,
-                Notes NVARCHAR(50),
-                YieldAmount INT NOT NULL,
-                ProductID NVARCHAR(50) NOT NULL,
-                PrepTime TIME NOT NULL,
-                BakeTime TIME NOT NULL,
-                FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID) ON DELETE CASCADE
-            )
-        `);
+		// Create tblStock
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStock')
+			CREATE TABLE tblStock (
+				StockID NVARCHAR(50) PRIMARY KEY,
+				ProductID NVARCHAR(50) NOT NULL,
+				CreateDateTime DATETIME NOT NULL,
+				ExpireDateTime DATETIME NOT NULL,
+				Amount DECIMAL(6,2),
+				FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID)
+			)
+		`);
 
-        // Create tblStorefront
-        // Keeps count of how much we have to sell out on the storefront using trigger to get count of tblStock, maybe not needed?
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStorefront')
-            CREATE TABLE tblStorefront (
-                StorefrontID NVARCHAR(50) PRIMARY KEY,
-                CurrentAmount INT NOT NULL,
-                RestockAmount INT NOT NULL,
-                MinAmount INT NOT NULL
-            )
-        `);
-        
-        // Create tblEquipment
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEquipment')
-            CREATE TABLE tblEquipment (
-                EquipmentID NVARCHAR(50) PRIMARY KEY,
-                Name NVARCHAR(50) NOT NULL,
-                Description NVARCHAR(50) NOT NULL,
-                Notes NVARCHAR(50) NOT NULL
-            )
-        `);
+		// Create tblRecipe
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipe')
+			CREATE TABLE tblRecipe (
+				RecipeID NVARCHAR(50) PRIMARY KEY,
+				Name NVARCHAR(50) NOT NULL,
+				Notes NVARCHAR(50),
+				YieldAmount INT NOT NULL,
+				ProductID NVARCHAR(50) NOT NULL,
+				PrepTime TIME NOT NULL,
+				BakeTime TIME NOT NULL,
+				FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID) ON DELETE CASCADE
+			)
+		`);
 
-        // Create tblKitchenEquipment
-        // Provides similar relationship as tblInventory does to tblIngredient
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblKitchenEquipment')
-            CREATE TABLE tblKitchenEquipment (
-                KitchenEquipmentID NVARCHAR(50) PRIMARY KEY,
-                EquipmentID NVARCHAR(50) NOT NULL,
-                Name NVARCHAR(50) NOT NULL,
-                Status NVARCHAR(50) NOT NULL,
-                SerialNumber NVARCHAR(50) NOT NULL,
-                Notes NVARCHAR(50),
-                FOREIGN KEY (EquipmentID) REFERENCES tblEquipment(EquipmentID)
-            )
-        `);
-        
-        // Create tblRecipeIngredient
-        // Connects tblRecipe and tblIngredient, says what ingredients go to what recipe
-        // foreign constraints for these next two might be weird
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeIngredient')
-            CREATE TABLE tblRecipeIngredient (
-                RecipeID NVARCHAR(50) NOT NULL,
-                IngredientID NVARCHAR(50) NOT NULL,
-                Quantity FLOAT(6,2) NOT NULL,
-                PRIMARY KEY (RecipeID, IngredientID),
-                FOREIGN KEY (RecioeID) REFERENCES tblRecipe(RecipeID),
-                FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
-            )
-        `);
-        
-        // Create tblRecipeEquipment
-        // Same function as tblRecipeIngredient, but for linking tblEquipment
-        await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeEquipment')
-            CREATE TABLE tblRecipeEquipment (
-                RecipeID NVARCHAR(50) NOT NULL,
-                EquipmentID NVARCHAR(50) NOT NULL,
-                Quantity FLOAT(6,2) NOT NULL,
-                PRIMARY KEY (RecipeID, EquipmentID),
-                FOREIGN KEY (RecioeID) REFERENCES tblRecipe(RecipeID),
-                FOREIGN KEY (EquipmentID) REFERENCES tlbEquipment(EquipmentID)
-            )
-        `);
-        
+		// Create tblStorefront
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStorefront')
+			CREATE TABLE tblStorefront (
+				StorefrontID NVARCHAR(50) PRIMARY KEY,
+				CurrentAmount INT NOT NULL,
+				RestockAmount INT NOT NULL,
+				MinAmount INT NOT NULL
+			)
+		`);
+
+		// Create tblEquipment
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEquipment')
+			CREATE TABLE tblEquipment (
+				EquipmentID NVARCHAR(50) PRIMARY KEY,
+				Name NVARCHAR(50) NOT NULL,
+				Description NVARCHAR(50) NOT NULL,
+				Notes NVARCHAR(50) NOT NULL
+			)
+		`);
+
+		// Create tblKitchenEquipment
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblKitchenEquipment')
+			CREATE TABLE tblKitchenEquipment (
+				KitchenEquipmentID NVARCHAR(50) PRIMARY KEY,
+				EquipmentID NVARCHAR(50) NOT NULL,
+				Name NVARCHAR(50) NOT NULL,
+				Status NVARCHAR(50) NOT NULL,
+				SerialNumber NVARCHAR(50) NOT NULL,
+				Notes NVARCHAR(50),
+				FOREIGN KEY (EquipmentID) REFERENCES tblEquipment(EquipmentID)
+			)
+		`);
+
+		// Create tblRecipeIngredient
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeIngredient')
+			CREATE TABLE tblRecipeIngredient (
+				RecipeID NVARCHAR(50) NOT NULL,
+				IngredientID NVARCHAR(50) NOT NULL,
+				Quantity DECIMAL(6,2) NOT NULL,
+				PRIMARY KEY (RecipeID, IngredientID),
+				FOREIGN KEY (RecipeID) REFERENCES tblRecipe(RecipeID),
+				FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
+			)
+		`);
+
+		// Create tblRecipeEquipment
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeEquipment')
+			CREATE TABLE tblRecipeEquipment (
+				RecipeID NVARCHAR(50) NOT NULL,
+				EquipmentID NVARCHAR(50) NOT NULL,
+				Quantity DECIMAL(6,2) NOT NULL,
+				PRIMARY KEY (RecipeID, EquipmentID),
+				FOREIGN KEY (RecipeID) REFERENCES tblRecipe(RecipeID),
+				FOREIGN KEY (EquipmentID) REFERENCES tblEquipment(EquipmentID)
+			)
+		`);
 
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
         
@@ -415,13 +403,13 @@ async function addUser(newUser) {
     try {
         const hashedPassword = await hashPassword(newUser.Password);
         const request = pool.request();
-        await request.input('userID', sql.NVarChar, newUser.Emp_ID)
+        await request.input('UserID', sql.NVarChar, newUser.UserID)
                      .input('FirstName', sql.NVarChar, newUser.FirstName)
                      .input('LastName', sql.NVarChar, newUser.LastName)
                      .input('Username', sql.NVarChar, newUser.Username)
                      .input('Password', sql.NVarChar, hashedPassword)
                      .input('UserType', sql.Bit, newUser.UserType)
-                     .query('INSERT INTO tblUser (userID, FirstName, LastName, Username, Password, UserType) VALUES (@userID, @FirstName, @LastName, @Username, @Password, @UserType)');
+                     .query('INSERT INTO tblUser (UserID, FirstName, LastName, Username, Password, UserType) VALUES (@UserID, @FirstName, @LastName, @Username, @Password, @UserType)');
     } catch (error) {
         console.log(error)
         throw error;
@@ -444,19 +432,19 @@ async function authenticateUser(username, password) {
         }
 
         // Create a User object with the retrieved data
-        return new User(user.userID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
+        return new User(user.UserID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
     } catch (error) {
         throw error;
     }
 }
 
 // Add a new session
-async function addSession(SessionID, userID) {
+async function addSession(SessionID, UserID) {
     try {
         const request = pool.request();
         await request.input('SessionID', sql.NVarChar, SessionID)
-                     .input('userID', sql.NVarChar, userID)
-                     .query('INSERT INTO tblSession (SessionID, userID) VALUES (@SessionID, @userID)');
+                     .input('UserID', sql.NVarChar, UserID)
+                     .query('INSERT INTO tblSession (SessionID, UserID) VALUES (@SessionID, @UserID)');
     } catch (error) {
         throw error;
     }
@@ -484,11 +472,11 @@ async function removeRecipe(recipeID) {
 }
 
 // Get user by session (used to automatically sign someone in based on SessionStorage for the web frontend, not sure about mobile just yet)
-async function getUserBySession(SessionID) {
+async function getUserBySession(sessionID) {
     try {
         const request = pool.request();
-        const result = await request.input('SessionID', sql.NVarChar, SessionID)
-                                   .query('SELECT U.FirstName, U.LastName, U.Email FROM tblSession S JOIN tblUser U ON S.Email = U.Email WHERE S.SessionID = @SessionID');
+        const result = await request.input('SessionID', sql.NVarChar, sessionID)
+                                   .query('SELECT * FROM tblSession S JOIN tblUser U ON S.UserID = U.UserID WHERE S.SessionID = @SessionID');
         if (result.recordset.length === 0) {
             return null;
         }
@@ -515,7 +503,7 @@ async function authenticateManager(username, password) {
         }
 
         // Create a User object with the retrieved data
-        return new User(user.userID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
+        return new User(user.UserID, user.FirstName, user.LastName, user.Username, user.Password, user.UserType);
     } catch (error) {
         throw error;
     }
@@ -573,9 +561,9 @@ app.post('/api/users', async (req, res) => {
     try {
         const { firstname, lastname, username, password, usertype } = req.body;
         // generate a new GUID
-        const emp_id = uuid.v4();
+        const user_id = uuid.v4();
         // Create a new User instance
-        const newUser = new User(emp_id, firstname, lastname, username, password, usertype);
+        const newUser = new User(user_id, firstname, lastname, username, password, usertype);
         // Save the new user to the database
         await addUser(newUser);
         res.status(201).json({ message: 'User registered successfully' });
@@ -614,7 +602,7 @@ app.post('/api/sessions/employee', async (req, res) => {
         }
         // Create a session entry in tblSession
         const newSession = uuid.v4();
-        await addSession(newSession, user.Emp_ID);
+        await addSession(newSession, user.UserID);
         res.status(200).json({ message: 'Logged in successfully', session: newSession });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
@@ -635,7 +623,7 @@ app.post('/api/sessions/manager', async (req, res) => {
         }
         // Create a session entry in tblSession
         const newSession = uuid.v4();
-        await addSession(newSession, user.Emp_ID);
+        await addSession(newSession, user.UserID);
         res.status(200).json({ message: 'Logged in successfully', session: newSession });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
@@ -659,12 +647,13 @@ app.delete('/api/sessions', async (req, res) => {
 // Saved-session login thingy :)
 app.get('/api/sessions', async (req, res) => {
     try {
+		const { sessionID } = req.query;
         // Get the user based on the session ID
-        const user = await getUserBySession(req.sessionID);
+        const user = await getUserBySession(sessionID);
         if (!user) {
             return res.status(401).json({ error: 'Session expired, please log in again' });
         }
-        res.status(200).json({ message: `Welcome ${user.FirstName} ${user.LastName}` });
+        res.status(200).json({ message: `Welcome ${user.FirstName} ${user.LastName}`, isManager: `${user.UserType}` });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
