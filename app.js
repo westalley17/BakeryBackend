@@ -510,11 +510,11 @@ async function authenticateManager(username, password) {
 async function getRecipeFromDb(recipeName) {
     try {
         //Connecting
-        await sql.connect(dbConfig);
+        const request  = pool.request();
 
         //Query to fetch
-        const result = await request.input('Recipe', sql.NVarChar, recipe)
-                                    .query`SELECT * FROM tblRecipe WHERE Name = ${recipeName}`;
+        const result = await request.input('Recipe', sql.NVarChar, recipeName)
+                                    .query(`SELECT * FROM tblRecipe WHERE Name = @Recipe`);
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
@@ -535,10 +535,11 @@ async function getRecipeNames()
 {
     try {
         //Connecting
-        await sql.connect(dbCOnfig);
+        const request = pool.request();
 
         //Get All
-        const result = await sql.query`SELECT Name FROM tblRecipe`
+        const result = await request.input('Name', sql.NVarChar, recipeName)
+                                .query(`SELECT Name FROM tblRecipe`);
 
         if (result.recordset == 0) {
             return null;
