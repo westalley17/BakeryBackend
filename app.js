@@ -514,7 +514,7 @@ async function getRecipeFromDb(recipeName) {
 
         //Query to fetch
         const result = await request.input('Recipe', sql.NVarChar, recipe)
-                                    .query`SELECT * FROM tbleRecipe WHERE Name = ${recipeName}`;
+                                    .query`SELECT * FROM tblRecipe WHERE Name = ${recipeName}`;
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
@@ -525,6 +525,26 @@ async function getRecipeFromDb(recipeName) {
         const recipe = result.recordset[0];
         return new RecipeItem(recipe.RecipeID, recipe.Name, recipe.Notes, recipe.YieldAmount, recipe.ProductID, recipe.PrepTime, recipe.BakeTime);
 
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+async function getRecipeNames()
+{
+    try {
+        //Connecting
+        await sql.connect(dbCOnfig);
+
+        //Get All
+        const result = await sql.query`SELECT Name FROM tblRecipe`
+
+        if (result.recordset == 0) {
+            return null;
+        }
+
+        return result.recordset;
     } catch (error) {
         console.error('Database query error:', error);
         throw error;
@@ -654,22 +674,19 @@ app.get('/api/recipe', async (req, res) => {
 });
 
 //RecipeNames GET
-app.get('/recipe/:name    ', async (req, res) => {
-    const recipeName = req.params.name;
-    if(recipeName) {
-        try {
-            const recipe = await getRecipeFromDb(recipeName);
+app.get('/recipe', async (req, res) => {
+    try {
+        const recipeNames = await getRecipeNames();
 
-            if(recipe) {
-                res.status(200).json(recipe.Name)
+        if(recipeNames) {
+            if (recipeNames.length > 0) {
+                res.status(200).json(recipeNames);
             } else {
-                res.status(404).send('Recipe Name not found');
+                res.status(404).send('No recipes found');
             }
-        } catch (error) {
-            res.status(500).send('Error fetching recipe name');
         }
-    } else {
-        res.status(500).json({ error: 'Internal serval error' });
+    } catch (error) {
+        res.status(500).send('Error retrieving recipes');
     }
 });
 
