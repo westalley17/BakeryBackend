@@ -106,8 +106,10 @@ class InventoryItem {
     }
 }
 
-class RecipeItem {
-    constructior(recipe_id, name, notes, yield_amount, product_id, prep_time, bake_time) {
+// this will need to be used with the getRecipeInfo endpoint to be able to return all necessary info
+// to the frontend ABOUT the recipe (i.e., its ingredients, tools, etc)
+class Recipe {
+    constructor(recipe_id, name, notes, yield_amount, product_id, prep_time, bake_time) {
         this.RecipeID = recipe_id;
         this.Name = name;
         this.Notes = notes;
@@ -115,6 +117,9 @@ class RecipeItem {
         this.ProductID = product_id;
         this.PrepTime = prep_time;
         this.BakeTime = bake_time;
+        // added these because the frontend will need them to generate full Recipe information cards
+        this.Ingredients = []; // this will need to be a dynamic array because ingredient count is unknown. (This will hold each Ingredient reorder/min amt too)
+        this.Tools = []; // same reason here
     }
 }
 
@@ -516,11 +521,12 @@ async function authenticateManager(username, password) {
     }
 }
 
-//Get Recipe Helper
+// this will most likely need to be a LOT more complicated to accomodate for the getRecipeInfo route
+// that will need to be created later
 async function getRecipeFromDb(recipeName) {
     try {
         //Connecting
-        const request  = pool.request();
+        const request = pool.request();
 
         //Query to fetch
         const result = await request.input('Recipe', sql.NVarChar, recipeName)
@@ -533,7 +539,7 @@ async function getRecipeFromDb(recipeName) {
         
         //Returns the whole object
         const recipe = result.recordset[0];
-        return new RecipeItem(recipe.RecipeID, recipe.Name, recipe.Notes, recipe.YieldAmount, recipe.ProductID, recipe.PrepTime, recipe.BakeTime);
+        return new Recipe(recipe.RecipeID, recipe.Name, recipe.Notes, recipe.YieldAmount, recipe.ProductID, recipe.PrepTime, recipe.BakeTime);
 
     } catch (error) {
         console.error('Database query error:', error);
@@ -541,6 +547,7 @@ async function getRecipeFromDb(recipeName) {
     }
 }
 
+// probably going to need this one to be able to pull the names depending on the category its in.
 async function getRecipeNames()
 {
     try {
@@ -548,10 +555,9 @@ async function getRecipeNames()
         const request = pool.request();
 
         //Get All
-        const result = await request.input('Name', sql.NVarChar, recipeName)
-                                .query(`SELECT Name FROM tblRecipe`);
+        const result = await request.query(`SELECT Name FROM tblRecipe`);
 
-        if (result.recordset == 0) {
+        if (!result) {
             return null;
         }
 
