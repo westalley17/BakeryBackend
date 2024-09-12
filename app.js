@@ -866,6 +866,32 @@ async function getRecipeFromDb(recipeName) {
     }
 }
 
+
+//Get ingredient helper function
+async function getIngredientFromDb(ingredientName) {
+    try {
+        //Connecting
+        const request = pool.request();
+
+        //Query to fetch
+        const result = await request.input('Ingredient', sql.NVarChar, ingredientName)
+                                    .query(`SELECT * FROM tblIngredient WHERE Name = @Ingredient`);
+
+        //Checks to make sure it exists
+        if (result.recordset.length == 0) {
+            return null; //Doesn't exist
+        }
+        
+        //Returns the whole object
+        const ingredient = result.recordset[0];
+        return new Ingredient(ingredient.IngredientID, ingredient.Description, ingredient.Category, ingredient.Measurement, ingredient.MaxAmount, ingredient.ReorderAmount, ingredient.MinAmount);
+
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
 // probably going to need this one to be able to pull the names depending on the category its in.
 async function getRecipeNames()
 {
@@ -1053,3 +1079,110 @@ createTables()
     .catch(err => {
         process.exit(1);
     });
+
+//ingredient GET
+app.get('/api/ingredient', async (req, res) => {
+    ingredientName = req.params.name;
+    if(ingredientName){
+        try {
+            const ingredient = await getIngredientFromDb(ingredientName);
+
+            if (ingredient) {
+                res.status(200).json(ingredient);   //Sends as a JSON response
+            } else {
+                res.status(404).send('Ingredient not found');
+            }
+        } catch (error) {
+            res.status(500).send('Error fetching ingredient');
+        }
+    } else {
+        res.status(500).json({ error: 'Internal serval error' });
+    }
+});
+
+// Recipe Info GET (get full recipe information including ingredients, tools, etc.)
+async function getRecipeFromDb(recipeName) {
+    try {
+        const request = new sql.Request();
+        request.input('RecipeName', sql.NVarChar, recipeName);
+        const result = await request.query(`
+            SELECT * FROM tblRecipe
+            WHERE Name = @RecipeName
+        `);
+        return result.recordset[0]; // Return the first record
+    } catch (error) {
+        console.error('Error fetching recipe:', error);
+        throw error;
+    }
+}
+
+async function getRecipeIngredients(recipeID) {
+    try {
+        const request = new sql.Request();
+        request.input('RecipeID', sql.NVarChar, recipeID);
+        const result = await request.query(`
+            SELECT i.IngredientID, i.Name, ri.Quantity
+            FROM tblRecipeIngredient ri
+            JOIN tblIngredient i ON ri.IngredientID = i.IngredientID
+            WHERE ri.RecipeID = @RecipeID
+        `);
+        return result.recordset; // Return an array of ingredients
+    } catch (error) {
+        console.error('Error fetching ingredients:', error);
+        throw error;
+    }
+}
+
+async function getRecipeEquipment(recipeID) {
+    try {
+        const request = new sql.Request();
+        request.input('RecipeID', sql.NVarChar, recipeID);
+        const result = await request.query(`
+            SELECT e.EquipmentID, e.Name, re.Quantity
+            FROM tblRecipeEquipment re
+            JOIN tblEquipment e ON re.EquipmentID = e.EquipmentID
+            WHERE re.RecipeID = @RecipeID
+        `);
+        return result.recordset; // Return an array of equipment/tools
+    } catch (error) {
+        console.error('Error fetching equipment:', error);
+        throw error;
+    }
+}
+app.get('/api/recipeInfo', async (req, res) => {
+    const recipeName = req.query.name; // Assuming you're querying by recipe name
+
+    if (recipeName) {
+        try {
+            // Fetch the basic recipe information
+            const recipe = await getRecipeFromDb(recipeName);
+
+            if (recipe) {
+                // Fetch the ingredients for the recipe
+                const ingredients = await getRecipeIngredients(recipe.RecipeID);
+
+                // Fetch the equipment/tools needed for the recipe
+                const equipment = await getRecipeEquipment(recipe.RecipeID);
+
+                // Structure the response to include recipe, ingredients, and tools
+                const recipeInfo = {
+                    Recipe: recipe,
+                    Ingredients: ingredients,
+                    Equipment: equipment,
+                };
+
+                // Send the full recipe information as a JSON response
+                res.status(200).json(recipeInfo);
+            } else {
+                res.status(404).send('Recipe not found');
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Error fetching recipe information');
+        }
+    } else {
+        res.status(400).json({ error: 'Recipe name is required' });
+    }
+});
+
+
