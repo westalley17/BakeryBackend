@@ -1185,4 +1185,146 @@ app.get('/api/recipeInfo', async (req, res) => {
     }
 });
 
+// Function to add a product category
+async function addProductCategory(newProductCategory) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+
+        // Insert query
+        const query = `
+            INSERT INTO tblProductCategory (ProductCategoryID, Name, Description)
+            VALUES (@ProductCategoryID, @Name, @Description)
+        `;
+
+        // Input parameters
+        request.input('ProductCategoryID', sql.NVarChar, newProductCategory.ProductCategoryID);
+        request.input('Name', sql.NVarChar, newProductCategory.Name);
+        request.input('Description', sql.NVarChar, newProductCategory.Description);
+
+        // Execute the query
+        await request.query(query);
+
+        console.log('Product category added successfully');
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+// POST endpoint to add a product category
+app.post('/api/productCategory', async (req, res) => {
+    const { Name, Description } = req.body;
+
+    if (!Name || !Description) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    const ProductCategoryID = uuid.v4(); // Generate a UUID for ProductCategoryID
+
+    try {
+        await addProductCategory({ ProductCategoryID, Name, Description });
+        res.status(201).send('Product category added successfully');
+    } catch (error) {
+        res.status(500).send('Internal server error');
+    }
+});
+
+
+// Function to add a product
+async function addProduct(newProduct) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+
+        // Insert query
+        const query = `
+            INSERT INTO tblProduct (ProductID, Name, Description, ProductCategoryID)
+            VALUES (@ProductID, @Name, @Description, @ProductCategoryID)
+        `;
+
+        // Input parameters
+        request.input('ProductID', sql.NVarChar, newProduct.ProductID);
+        request.input('Name', sql.NVarChar, newProduct.Name);
+        request.input('Description', sql.NVarChar, newProduct.Description);
+        request.input('ProductCategoryID', sql.NVarChar, newProduct.ProductCategoryID);
+
+        // Execute the query
+        await request.query(query);
+
+        console.log('Product added successfully');
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+// POST endpoint to add a product
+app.post('/api/product', async (req, res) => {
+    const { Name, Description, ProductCategoryID } = req.body;
+
+    if (!Name || !Description || !ProductCategoryID) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    const ProductID = uuid.v4(); // Generate a UUID for ProductID
+
+    try {
+        await addProduct({ ProductID, Name, Description, ProductCategoryID });
+        res.status(201).send('Product added successfully');
+    } catch (error) {
+        res.status(500).send('Internal server error');
+    }
+});
+
+// POST endpoint to add a recipe
+app.post('/api/recipe', async (req, res) => {
+    const { Name, Notes, YieldAmount, ProductID, PrepTime, BakeTime } = req.body;
+
+    if (!Name || !YieldAmount || !ProductID || !PrepTime || !BakeTime) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    try {
+        // Parse and validate time to ensure it's in the correct format HH:mm:ss
+        const formatTime = (time) => {
+            const matches = time.match(/^(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,7})?$/);
+            if (!matches) return null;
+            return `${matches[1]}:${matches[2]}:${matches[3]}`;  // Strip off unnecessary fractions
+        };
+
+        const formattedPrepTime = formatTime(PrepTime);
+        const formattedBakeTime = formatTime(BakeTime);
+
+        if (!formattedPrepTime || !formattedBakeTime) {
+            return res.status(400).send('Invalid time format. Use HH:mm:ss');
+        }
+
+        const RecipeID = uuid.v4(); // Generate a UUID for RecipeID
+
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+        const query = `
+            INSERT INTO tblRecipe (RecipeID, Name, Notes, YieldAmount, ProductID, PrepTime, BakeTime)
+            VALUES (@RecipeID, @Name, @Notes, @YieldAmount, @ProductID, CAST(@PrepTime AS TIME), CAST(@BakeTime AS TIME))
+        `;
+
+        // Input parameters
+        request.input('RecipeID', sql.NVarChar, RecipeID);
+        request.input('Name', sql.NVarChar, Name);
+        request.input('Notes', sql.NVarChar, Notes);
+        request.input('YieldAmount', sql.Int, YieldAmount);
+        request.input('ProductID', sql.NVarChar, ProductID);
+        request.input('PrepTime', sql.NVarChar, formattedPrepTime);  // Using NVarChar to pass time as string because sql.time seemed to not be compatible with mssql. It will be stored as TIME in the database
+        request.input('BakeTime', sql.NVarChar, formattedBakeTime);
+
+        await request.query(query);
+
+        res.status(201).send('Recipe added successfully');
+    } catch (err) {
+        console.error('Error inserting recipe:', err);
+        res.status(500).send('Internal server error');
+    }
+});
+
 
