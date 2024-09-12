@@ -693,6 +693,18 @@ async function createTables() {
 				FOREIGN KEY (EquipmentID) REFERENCES tblEquipment(EquipmentID)
 			)
 		`);
+		
+		// Create tblRecipeInstruction
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeInstruction')
+			CREATE TABLE tblRecipeInstruction (
+				RecipeID NVARCHAR(50) NOT NULL,
+				StepID INT NOT NULL,
+				Instruction NVARCHAR(MAX),
+				PRIMARY KEY (RecipeID, StepID),
+				FOREIGN KEY (RecipeID) REFERENCES tblRecipe(RecipeID)
+			)	
+		`)
 
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
         
