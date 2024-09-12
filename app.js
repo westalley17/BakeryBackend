@@ -1053,6 +1053,54 @@ app.get('/recipe', async (req, res) => {
     }
 });
 
+// POST endpoint to add a recipe
+app.post('/api/recipe', async (req, res) => {
+    const { RecipeID, Name, Notes, YieldAmount, ProductID, PrepTime, BakeTime } = req.body;
+
+    if (!RecipeID || !Name || !YieldAmount || !ProductID || !PrepTime || !BakeTime) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    try {
+        // Parse and validate time to ensure it's in the correct format HH:mm:ss or HH:mm:ss[.nnnnnnn]
+        const formatTime = (time) => {
+            const matches = time.match(/^(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,7})?$/);
+            if (!matches) return null;
+            return `${matches[1]}:${matches[2]}:${matches[3]}`;  // Strip off unnecessary fractions
+        };
+
+        const formattedPrepTime = formatTime(PrepTime);
+        const formattedBakeTime = formatTime(BakeTime);
+
+        if (!formattedPrepTime || !formattedBakeTime) {
+            return res.status(400).send('Invalid time format. Use HH:mm:ss[.nnnnnnn]');
+        }
+
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+        const query = `
+            INSERT INTO tblRecipe (RecipeID, Name, Notes, YieldAmount, ProductID, PrepTime, BakeTime)
+            VALUES (@RecipeID, @Name, @Notes, @YieldAmount, @ProductID, CAST(@PrepTime AS TIME), CAST(@BakeTime AS TIME))
+        `;
+
+        // Input parameters
+        request.input('RecipeID', sql.NVarChar, RecipeID);
+        request.input('Name', sql.NVarChar, Name);
+        request.input('Notes', sql.NVarChar, Notes);
+        request.input('YieldAmount', sql.Int, YieldAmount);
+        request.input('ProductID', sql.NVarChar, ProductID);
+        request.input('PrepTime', sql.NVarChar, formattedPrepTime);  // Using NVarChar to pass time as string because sql.time seemed to not be compatible with mssql.
+        request.input('BakeTime', sql.NVarChar, formattedBakeTime);
+
+        await request.query(query);
+
+        res.status(201).send('Recipe added successfully');
+    } catch (err) {
+        console.error('Error inserting recipe:', err);
+        res.status(500).send('Internal server error');
+    }
+});
+
 //Recipe DELETE
 app.delete('/api/recipe', async (req, res) => {
     try {
