@@ -1080,21 +1080,9 @@ app.delete('/api/recipe', async (req, res) => {
     }
 })                       
 
-// Initialize the database tables and start the server
-createTables()
-    .then(() => {
-        const port = process.env.PORT || 3030;
-        app.listen(port, () => {
-            console.log(`Listening on port ${port}...`);
-        });
-    })
-    .catch(err => {
-        process.exit(1);
-    });
-
 //ingredient GET
 app.get('/api/ingredient', async (req, res) => {
-    ingredientName = req.params.name;
+    const ingredientName = req.query.name;
     if(ingredientName){
         try {
             const ingredient = await getIngredientFromDb(ingredientName);
@@ -1114,12 +1102,12 @@ app.get('/api/ingredient', async (req, res) => {
 
 // Recipe Get info 
 app.get('/api/recipeInfo', async (req, res) => {
-    const recipeName = req.query.name;
-    const recipeID = req.query.id;
+    const { recipeName } = req.query.name;
+    const { recipeID } = req.query.id;
 
     if (recipeName || recipeID) {
         try {
-            const request = new sql.Request();
+            const request = pool.request();
 
             let query = '';
             if (recipeName) {
@@ -1289,4 +1277,14 @@ app.post('/api/recipe', async (req, res) => {
     }
 });
 
-
+// Initialize the database tables and start the server
+createTables()
+    .then(() => {
+        const port = process.env.PORT || 3030;
+        app.listen(port, () => {
+            console.log(`Listening on port ${port}...`);
+        });
+    })
+    .catch(err => {
+        process.exit(1);
+    });
