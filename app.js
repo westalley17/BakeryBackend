@@ -1339,4 +1339,93 @@ app.post('/api/recipe', async (req, res) => {
     }
 });
 
+async function addIngredientCategory(newCategory) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
 
+        // Insert query
+        const query = `
+            INSERT INTO tblIngredientCategory (IngredientCategoryID, Name, Description)
+            VALUES (@IngredientCategoryID, @Name, @Description)
+        `;
+
+        // Input parameters
+        request.input('IngredientCategoryID', sql.NVarChar, newCategory.IngredientCategoryID);
+        request.input('Name', sql.NVarChar, newCategory.Name);
+        request.input('Description', sql.NVarChar, newCategory.Description);
+
+        // Execute the query
+        await request.query(query);
+
+        console.log('Ingredient category added successfully');
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+app.post('/api/ingredientCategory', async (req, res) => {
+    const { Name, Description } = req.body;
+
+    if (!Name || !Description) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    const IngredientCategoryID = uuid.v4(); // Generate a UUID for IngredientCategoryID
+
+    try {
+        await addIngredientCategory({ IngredientCategoryID, Name, Description });
+        res.status(201).send('Ingredient category added successfully');
+    } catch (error) {
+        res.status(500).send('Internal server error');
+    }
+});
+
+async function addIngredient(newIngredient) {
+    try {
+        await poolConnect;
+        const request = pool.request();
+
+        const query = `
+            INSERT INTO tblIngredient (IngredientID, Name, Description, IngredientCategoryID, Measurement, MaxAmount, ReorderAmount, MinAmount, Allergen)
+            VALUES (@IngredientID, @Name, @Description, @IngredientCategoryID, @Measurement, @MaxAmount, @ReorderAmount, @MinAmount, @Allergen)
+        `;
+
+        // Input parameters
+        request.input('IngredientID', sql.NVarChar, newIngredient.IngredientID);
+        request.input('Name', sql.NVarChar, newIngredient.Name);
+        request.input('Description', sql.NVarChar, newIngredient.Description);
+        request.input('IngredientCategoryID', sql.NVarChar, newIngredient.IngredientCategoryID);
+        request.input('Measurement', sql.NVarChar, newIngredient.Measurement);
+        request.input('MaxAmount', sql.Decimal(6, 2), newIngredient.MaxAmount);
+        request.input('ReorderAmount', sql.Decimal(6, 2), newIngredient.ReorderAmount);
+        request.input('MinAmount', sql.Decimal(6, 2), newIngredient.MinAmount);
+        request.input('Allergen', sql.Bit, newIngredient.Allergen);
+
+        // Execute the query
+        await request.query(query);
+
+        console.log('Ingredient added successfully');
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+app.post('/api/ingredient', async (req, res) => {
+    const { Name, Description, IngredientCategoryID, Measurement, MaxAmount, ReorderAmount, MinAmount, Allergen } = req.body;
+    if (!Name || !Description || !IngredientCategoryID || !Measurement || !MaxAmount || !ReorderAmount || !MinAmount || Allergen === undefined) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    const IngredientID = uuid.v4(); // Generate a UUID for IngredientID
+
+    try {
+        await addIngredient({ IngredientID, Name, Description, IngredientCategoryID, Measurement, MaxAmount, ReorderAmount, MinAmount, Allergen });
+        res.status(201).send('Ingredient added successfully');
+    }
+    catch (error) {
+        res.status(500).send('Internal server error');
+    }
+});
