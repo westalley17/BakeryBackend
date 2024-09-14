@@ -142,7 +142,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-// MS SQL Server connection configuration (only for local usage)
+// MS SQL Server connection configuration
 const dbConfig = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -150,7 +150,7 @@ const dbConfig = {
     database: process.env.DB_NAME,
     options: {
         encrypt: true, // for Azure
-        trustServerCertificate: true // set to true for local development with self-signed certs
+        trustServerCertificate: false // set to true for local development with self-signed certs
     },
     pool: {
         max: 10,
