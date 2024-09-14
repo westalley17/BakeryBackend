@@ -143,26 +143,25 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // MS SQL Server connection configuration (only for local usage)
-// const dbConfig = {
-//     user: process.env.DB_USER,
-//     password: process.env.DB_PASSWORD,
-//     server: process.env.DB_SERVER, // e.g., 'localhost'
-//     database: process.env.DB_NAME,
-//     options: {
-//         encrypt: true, // for Azure
-//         trustServerCertificate: true // set to true for local development with self-signed certs
-//     },
-//     pool: {
-//         max: 10,
-//         min: 0,
-//         idleTimeoutMillis: 30000
-//     }
-// };
+const dbConfig = {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER, // e.g., 'localhost'
+    database: process.env.DB_NAME,
+    options: {
+        encrypt: true, // for Azure
+        trustServerCertificate: true // set to true for local development with self-signed certs
+    },
+    pool: {
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000
+    }
+};
 
-const dbConnection = process.env.DATABASE_CONNECTION_STRING;
 
 // Initialize connection pool
-const pool = new sql.ConnectionPool(dbConnection);
+const pool = new sql.ConnectionPool(dbConfig);
 const poolConnect = pool.connect();
 
 // Session management
