@@ -57,6 +57,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bakery'
-          slot-name: 'Production'
           package: ./app
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_AB0A6F1953E940E1A66615A91AA9665B }}
