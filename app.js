@@ -133,8 +133,8 @@ const sql = require('mssql'); // MS SQL Server
 const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 
-// Load environment variables from environment
-dotenv.config();
+// Load environment variables from environment (local use only)
+//dotenv.config();
 
 const app = express();
 
@@ -144,10 +144,10 @@ app.use(cors());
 
 // MS SQL Server connection configuration
 const dbConfig = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER, // e.g., 'localhost'
-    database: process.env.DB_NAME,
+    user: process.env.AZURE_SQL_USERNAME,
+    password: process.env.AZURE_SQL_PASSWORD,
+    server: process.env.AZURE_SQL_SERVER, // e.g., 'localhost'
+    database: process.env.AZURE_SQL_DATABASE,
     options: {
         encrypt: true, // for Azure
         trustServerCertificate: false // set to true for local development with self-signed certs
@@ -167,11 +167,11 @@ const poolConnect = pool.connect();
 // Session management
 app.use(session({
     genid: () => uuid.v4(),
-    secret: process.env.SESSION_SECRET, // Use environment variable
+    secret: process.env.AZURE_SQL_SESSION_SECRET, // Use environment variable
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', // Ensure secure in production
+        secure: process.env.AZURE_SQL_NODE_ENV === 'production', // Ensure secure in production
         httpOnly: true,
         sameSite: 'lax'
     }
