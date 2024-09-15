@@ -28,7 +28,7 @@ jobs:
           npm run test --if-present
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+        run: zip -r release.zip . -x "*.git*" -x "*.github*" -x "*.gitignore" -x "release.zip"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -50,13 +50,13 @@ jobs:
           name: node-app
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip
-      
+        run: unzip -o release.zip -d ./app
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bakery'
           slot-name: 'Production'
-          package: .
+          package: ./app
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_AB0A6F1953E940E1A66615A91AA9665B }}
