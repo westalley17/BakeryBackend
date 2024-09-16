@@ -1133,6 +1133,40 @@ app.get('/api/recipeInfo', async (req, res) => {
     }
 });
 
+
+app.get('/api/checkRecipeIngredients', async (req, res) => {
+    const recipeID = req.query.recipeID;
+    const quantity = req.query.quantity;
+
+    if (!recipeID || !quantity) {
+        return res.status(400).json({ error: 'RecipeID and quantity are required' });
+    }
+
+    try {
+        const result = await pool.request()
+            .input('recipeID', sql.NVarChar, recipeID)
+            .input('DesiredQuantity', sql.Int, quantity)
+            .execute('CheckRecipeIngredients');
+
+        let responseArray = result.recordset.map(row => {
+            let isSufficient;
+            if (row.IsSufficient === 'TRUE') {
+                isSufficient = 1;
+            } else {
+                isSufficient = 0;
+            }
+            return `{${row.IngredientID},${isSufficient}}`;
+        });
+
+        let responseString = `[${responseArray.join(',')}]`;
+
+        res.send(responseString);
+    } catch (error) {
+        console.error('Error fetching ingredients:', error);
+        res.status(500).send('Error fetching ingredients');
+    }
+});
+
 // Function to add a product category
 async function addProductCategory(newProductCategory) {
     try {
