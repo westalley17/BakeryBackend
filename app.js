@@ -903,14 +903,17 @@ async function getIngredientFromDb(ingredientName) {
 }
 
 // probably going to need this one to be able to pull the names depending on the category its in.
-async function getRecipeNames()
+async function getRecipeNames(category)
 {
     try {
         //Connecting
         const request = pool.request();
 
-        //Get All
-        const result = await request.query(`SELECT Name FROM tblRecipe`);
+        // fetch all recipe names associated with a category (i.e., category = cake, result should be "[chocolate, strawberry, vanilla...]")
+        const result = await request.input('Category', sql.NVarChar, category)
+                                    .query(`SELECT r.RecipeID, r.Name 
+                                            FROM tblRecipe r JOIN tblProduct p ON r.ProductID = p.ProductID JOIN tblProductCategory pc 
+                                            ON p.ProductCategoryID = pc.ProductCategoryID WHERE pc.Name = @Category;`);
 
         if (!result) {
             return null;
@@ -1047,9 +1050,10 @@ app.get('/api/recipe', async (req, res) => {
 });
 
 //RecipeNames GET
-app.get('/recipe', async (req, res) => {
+app.get('/api/recipeNames', async (req, res) => {
     try {
-        const recipeNames = await getRecipeNames();
+        const { category } = req.query;
+        const recipeNames = await getRecipeNames(category);
 
         if(recipeNames) {
             if (recipeNames.length > 0) {
