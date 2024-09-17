@@ -1104,21 +1104,14 @@ app.get('/api/ingredient', async (req, res) => {
 
 // Recipe Get info 
 app.get('/api/recipeInfo', async (req, res) => {
-    const { recipeName } = req.query.name;
-    const { recipeID } = req.query.id;
+    const { recipeID } = req.query;
 
-    if (recipeName || recipeID) {
+    if (recipeID) {
         try {
             const request = pool.request();
-
             let query = '';
-            if (recipeName) {
-                request.input('RecipeName', sql.NVarChar, recipeName);
-                query = 'SELECT * FROM vwRecipeInfo WHERE RecipeName = @RecipeName';
-            } else if (recipeID) {
-                request.input('RecipeID', sql.NVarChar, recipeID);
-                query = 'SELECT * FROM vwRecipeInfo WHERE RecipeID = @RecipeID';
-            }
+            request.input('RecipeID', sql.NVarChar, recipeID);
+            query = 'SELECT * FROM vwRecipeInfo WHERE RecipeID = @RecipeID';
 
             const result = await request.query(query);
             const recipeInfo = result.recordset[0]; // Retrieve the first record
