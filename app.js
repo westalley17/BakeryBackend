@@ -53,6 +53,7 @@ class Email {
     }
 }
 
+
 class EmailType {
     constructor(type_id, desc, active) {
         this.TypeID = type_id; // Primary
