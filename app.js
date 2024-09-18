@@ -1189,7 +1189,7 @@ app.get('/api/checkRecipeIngredients', async (req, res) => {
             return `{RecipeID: ${row.IngredientID}, available: ${isSufficient}}`;
         });
 
-        let responseString = `[${responseArray.join(',')}]`;
+        let responseString = [${responseArray.join(',')}];
 
         res.status(200).json(responseString);
     } catch (error) {
