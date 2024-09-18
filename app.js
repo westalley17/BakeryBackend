@@ -415,8 +415,6 @@ async function createTables() {
                     overtimeHours decimal(5,2) DEFAULT NULL,
                     holidayHours decimal(5,2) DEFAULT NULL,
                     PRIMARY KEY (hoursID),
-                    KEY userID (userID),
-                    KEY dayID (dayID),
                     FOREIGN KEY (userID) REFERENCES tbluser (userID) ON DELETE CASCADE,
                     FOREIGN KEY (dayID) REFERENCES tblday (dayID) ON DELETE CASCADE
                 ) 
