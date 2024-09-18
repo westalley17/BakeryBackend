@@ -965,6 +965,10 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
+
+
+
+
 // Availability route (findUser)
 app.get('/api/users', async (req, res) => {
     try {
@@ -978,7 +982,7 @@ app.get('/api/users', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-})
+});
 
 // Login route for employee with frontend input validation
 app.post('/api/sessions/employee', async (req, res) => {
@@ -997,6 +1001,11 @@ app.post('/api/sessions/employee', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+
+
+
+
 
 // Login route for manager with frontend input validation
 app.post('/api/sessions/manager', async (req, res) => {
@@ -1099,7 +1108,7 @@ app.delete('/api/recipe', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-})                       
+});              
 
 //ingredient GET
 app.get('/api/ingredient', async (req, res) => {
@@ -1149,7 +1158,7 @@ app.get('/api/recipeInfo', async (req, res) => {
     }
 });
 
-
+//TESTED == WORK
 app.get('/api/checkRecipeIngredients', async (req, res) => {
     const recipeID = req.query.recipeID;
     const quantity = req.query.quantity;
@@ -1171,7 +1180,7 @@ app.get('/api/checkRecipeIngredients', async (req, res) => {
             } else {
                 isSufficient = 0;
             }
-            return `{${row.IngredientID},${isSufficient}}`;
+            return `{RecipeID: ${row.IngredientID}, available: ${isSufficient}}`;
         });
 
         let responseString = `[${responseArray.join(',')}]`;
@@ -1182,6 +1191,8 @@ app.get('/api/checkRecipeIngredients', async (req, res) => {
         res.status(500).send('Error fetching ingredients');
     }
 });
+
+
 
 // Function to add a product category
 async function addProductCategory(newProductCategory) {
