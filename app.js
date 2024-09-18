@@ -701,7 +701,7 @@ async function createTables() {
 				PRIMARY KEY (RecipeID, StepID),
 				FOREIGN KEY (RecipeID) REFERENCES tblRecipe(RecipeID)
 			)	
-		`)
+		`);
 
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
         
@@ -1403,8 +1403,8 @@ async function mulRecipe(recipeID, num) {	// Used for doubling, tripling, etc. a
 		request.input('RecipeID', sql.NVarChar, recipeID);
 		request.input('num', sql.Float, num);
 		const result = await request.query(`
-			SELECT ri.RecipeID, ri.IngredientID, ri.ProductID, ri.Quantity * @num AS ScaledQuantity 
-			FROM tblRecipeIngredients ri
+			SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * @num AS ScaledQuantity 
+			FROM tblRecipeIngredients ri JOIN tblRecipe re
 			WHERE ri.RecipeID = @RecipeID
 			`);						// Returns relevent tblRecipeIngredients stuff for our specific recipe, AND replaces 'Quantity' with
 		return result.recordset; 	// 'ScaledQuantity', which has just been multiplied by num
@@ -1418,13 +1418,12 @@ async function quantityCheck(ing) { 	// Returns a bool that throws an error if f
 	try{
 		const request = new sql.Request();
 		request.input('IngredientID', sql.NVarChar, ing.IngredientID);
-		request.input('ScaledQuantity', sql.NVarChar, ing.ScaledQuantity);
 		const check = await request.query(`
 			SELECT SUM(inv.Quantity) AS TotalQuantity
 			FROM tblInventory inv
 			WHERE inv.IngredientID = @IngredientID AND GETDATE() <= inv.ExpireDateTime
 			)`);	// checking if the sum of usable quantities of an ingredient is enough to cover what we need to backe
-		return check.recordset[0].TotalQuantity >= ing.ScaledQuantity;
+		return check.recordset[0].TotalQuantity < ing.ScaledQuantity; // If ScaledQuantity (what we need) is more than TotalQuantity (what we have), return true
 	} catch (error) {
 		console.error('Error checking valid quantities for recipe use ', error);
 	}
@@ -1441,7 +1440,7 @@ async function deductInventory(ing) {	// Deducting the quantity needed 'curr' fr
 			let result1 = await request.query(`
 				SELECT TOP 1 *
 				FROM tblInventory inv
-				WHERE inv.IngredientID = @IngredientID AND NOW <= inv.ExpireDateTime AND inv.Quantity > 0
+				WHERE inv.IngredientID = @IngredientID AND GETDATE() <= inv.ExpireDateTime AND inv.Quantity > 0
 				ORDER BY inv.ExpireDateTime
 				)`);
 			let invItem = result1.recordset; // i think this is how you use 'let'
@@ -1450,8 +1449,8 @@ async function deductInventory(ing) {	// Deducting the quantity needed 'curr' fr
 			request.input('EntityID', sql.NVarChar, invItem.EntityID);
 			if (newQuantity <= 0){	// Meaning we just took ALL the quantity from that row, so we can just delete it
 				let result2 = await request.query(`
-					DELETE FROM tblInventory inv
-					WHERE inv.EntityID = @EntityID
+					DELETE FROM tblInventory
+					WHERE tblInventory.EntityID = @EntityID
 				`);
 			}
 			else{	// Meaning there's still some quantity that will be left over after taking some out, we update the table to what's left
@@ -1470,7 +1469,7 @@ async function deductInventory(ing) {	// Deducting the quantity needed 'curr' fr
 async function stockAfterBake(recipe, num) {
 	try{
 		const request = new sql.Request();
-		const stockID = uuid.v4();
+		const stockID = uuid.v4();  // have to generate since we're making a new stock entity
 		request.input('ProductID', sql.NVarChar, recipe.ProductID);
 		request.input('NewAmount', sql.Float, num * recipe.YieldAmount);
 		request.input('StockID', sql.NVarChar, stockID);
@@ -1499,7 +1498,7 @@ app.post('/api/startBaking', async (req, res) => {
 			const quantities = await mulRecipe(recipe.RecipeID, num); // num is what we're scaling the recipe by, it's set to 1 right now
 	// 2) Get make sure that the amount is NOT more than what exists in inventory
 			quantities.forEach(ing =>{	// unfortunately we can't call request.query in loops like this so we have to call a function to do it for each ingredient
-				if (quantityCheck(ing)) throw 'One or more ingredient quantities is invalid.';
+				if (quantityCheck(ing)) throw 'One or more ingredient quantities is invalid.';  // If the check comes back true, throw an error, we can't make the recipe
 			});
 	// 3) Go to inventory and subtract the specified amount (THIS CAN NOT FAIL!!!!!!)
 			quantities.forEach(ing =>{	
