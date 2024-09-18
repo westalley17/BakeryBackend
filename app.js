@@ -741,6 +741,10 @@ async function findUser(username) {
 // Add a new user
 async function addUser(newUser) {
     try {
+        const existingUser = await finduser(newUser.Username);
+        if (existingUser) {
+            throw new Error('new user already exists'); //did not check for new user originally 
+        }
         const hashedPassword = await hashPassword(newUser.Password);
         const request = pool.request();
         await request.input('UserID', sql.NVarChar, newUser.UserID)
@@ -1064,6 +1068,7 @@ app.get('/api/recipeNames', async (req, res) => {
         }
     } catch (error) {
         res.status(500).send('Error retrieving recipes');
+        res.status(500).json({ error: 'Error retrieving recipes', message: error.message });
     }
 });
 
@@ -1085,23 +1090,24 @@ app.delete('/api/recipe', async (req, res) => {
 //ingredient GET
 app.get('/api/ingredient', async (req, res) => {
     const ingredientName = req.query.name;
-    if(ingredientName){
-        try {
-            const ingredient = await getIngredientFromDb(ingredientName);
+    if (!ingredientName) {
+        return res.status(400).json({ error: 'Invalid request', message: 'Ingredient name is required' });
+    }
+    try {
+        const request = pool.request();
+        request.input('IngredientName', sql.NVarChar, ingredientName);
+        const result = await request.query('SELECT * FROM tblIngredient WHERE Name = @IngredientName');
+        const ingredient = result.recordset[0];
 
-            if (ingredient) {
-                res.status(200).json(ingredient);   //Sends as a JSON response
-            } else {
-                res.status(404).send('Ingredient not found');
-            }
-        } catch (error) {
-            res.status(500).send('Error fetching ingredient');
+        if (ingredient) {
+            res.status(200).json(ingredient);   //Sends as a JSON response
+        } else {
+            res.status(404).send('Ingredient not found');
         }
-    } else {
-        res.status(500).json({ error: 'Internal serval error' });
+    } catch (error) {
+        res.status(500).send('Error fetching ingredient');
     }
 });
-
 // Recipe Get info 
 app.get('/api/recipeInfo', async (req, res) => {
     const { recipeID } = req.query;
@@ -1198,6 +1204,9 @@ app.post('/api/productCategory', async (req, res) => {
     if (!Name || !Description) {
         return res.status(400).send('Missing required fields');
     }
+    if (typeof Name !== 'string' || typeof Description !== 'string') {
+        return res.status(400).json({ error: 'Invalid request', message: 'Name and description must be strings' });
+    }
 
     const ProductCategoryID = uuid.v4(); // Generate a UUID for ProductCategoryID
 
@@ -1245,7 +1254,9 @@ app.post('/api/product', async (req, res) => {
     if (!Name || !Description || !ProductCategoryID) {
         return res.status(400).send('Missing required fields');
     }
-
+    if (typeof Name !== 'string' || typeof Description !== 'string' || typeof ProductCategoryID !== 'string') {
+        return res.status(400).json({ error: 'Invalid request', message: 'Name, description, and product category ID must be strings' });
+    }
     const ProductID = uuid.v4(); // Generate a UUID for ProductID
 
     try {
@@ -1262,6 +1273,9 @@ app.post('/api/recipe', async (req, res) => {
 
     if (!Name || !YieldAmount || !ProductID || !PrepTime || !BakeTime) {
         return res.status(400).send('Missing required fields');
+    }
+    if (typeof Name !== 'string' || typeof Notes !== 'string' || typeof ProductID !== 'string' || typeof PrepTime !== 'string' || typeof BakeTime !== 'string') {
+        return res.status(400).json({ error: 'Invalid request', message: 'Name, notes, product ID, prep time, and bake time must be strings' });
     }
 
     try {
@@ -1510,6 +1524,7 @@ app.post('/api/startBaking', async (req, res) => {
 		}
 		catch(error){
 			console.error('Error using recipe: ', error);
+            res.status(500).json({ error: 'Internal server error', message: error.message });
 		}
 	} else {
         res.status(400).json({ error: 'Recipe name is required' });
