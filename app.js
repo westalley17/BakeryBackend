@@ -1191,10 +1191,10 @@ app.get('/api/checkRecipeIngredients', async (req, res) => {
 
         let responseString = `[${responseArray.join(',')}]`;
 
-        res.send(responseString);
+        res.status(200).json(responseString);
     } catch (error) {
         console.error('Error fetching ingredients:', error);
-        res.status(500).send('Error fetching ingredients');
+        res.status(500).json({ message: 'Error fetching ingredients' });
     }
 });
 
