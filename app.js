@@ -53,6 +53,7 @@ class Email {
     }
 }
 
+
 class EmailType {
     constructor(type_id, desc, active) {
         this.TypeID = type_id; // Primary
@@ -406,16 +407,17 @@ async function createTables() {
             // Create tblHoursWorkedDay
             await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHoursWorkedDay')
-                CREATE TABLE tblHoursWorkedDay (
-                    HoursID NVARCHAR(50) PRIMARY KEY,
-                    UserID NVARCHAR(50),
-                    DayID NVARCHAR(50),
-                    NormalHours DECIMAL(5,2),
-                    OvertimeHours DECIMAL(5,2),
-                    HolidayHours DECIMAL(5,2),
-                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE,
-                    FOREIGN KEY (DayID) REFERENCES tblDay(DayID) ON DELETE CASCADE
-                )
+                CREATE TABLE tblhoursworkedday (
+                    hoursID varchar(50) NOT NULL,
+                    userID varchar(50) DEFAULT NULL,
+                    dayID varchar(50) DEFAULT NULL,
+                    normalHours decimal(5,2) DEFAULT NULL,
+                    overtimeHours decimal(5,2) DEFAULT NULL,
+                    holidayHours decimal(5,2) DEFAULT NULL,
+                    PRIMARY KEY (hoursID),
+                    FOREIGN KEY (userID) REFERENCES tbluser (userID) ON DELETE CASCADE,
+                    FOREIGN KEY (dayID) REFERENCES tblday (dayID) ON DELETE CASCADE
+                ) 
             `);
 
             // Create tblPay
@@ -702,6 +704,23 @@ async function createTables() {
 				FOREIGN KEY (RecipeID) REFERENCES tblRecipe(RecipeID)
 			)	
 		`)
+
+
+		await request.query(`
+			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblLog')
+			CREATE TABLE tblLog (
+                logID NVARCHAR(50) PRIMARY KEY,  
+                userID NVARCHAR(50) NOT NULL,        
+                dayID NVARCHAR(50) NOT NULL,     
+                clockInTime DATETIME NOT NULL,     
+                clockOutTime DATETIME NOT NULL,      
+                isHoliday BIT NOT NULL,              
+                FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE,
+                FOREIGN KEY (dayID) REFERENCES tblday(dayID) ON DELETE CASCADE
+			)	
+		`)
+
+
 
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
         
