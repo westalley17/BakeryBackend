@@ -1602,7 +1602,7 @@ async function stockAfterBake(recipe, num) {
 		request.input('NewAmount', sql.Float, num * recipe.YieldAmount);
 		request.input('StockID', sql.NVarChar, stockID);
 		return1 = await request.query(`
-			INSERT INTO tblStock st (st.StockID, st.ProductID, st.CreateDateTime, st.ExpireDateTime, st.Amount)
+			INSERT INTO tblStock (StockID, ProductID, CreateDateTime, ExpireDateTime, Amount)
 			VALUES (@StockID, @ProductID, GETDATE(), DATEADD(day, 5, GETDATE()), @NewAmount)
 			`);	// At the moment, expiredatetime is just set to be five days after createdatetime. likely need to add attribute into tblProduct to represent shelf-life
 		console.log('Stock added successfully.');
