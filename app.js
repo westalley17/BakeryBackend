@@ -1524,7 +1524,6 @@ app.post('/api/clockout', async (req, res) => {
 
 
 
-
 async function mulRecipe(recipeID, num) {
     try {
         await poolConnect; // Ensure the pool is connected
@@ -1532,7 +1531,7 @@ async function mulRecipe(recipeID, num) {
         request.input('RecipeID', sql.NVarChar, recipeID);
         request.input('num', sql.Float, num);
         const result = await request.query(`
-            SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * @num AS ScaledQuantity 
+            SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * 2 AS ScaledQuantity 
             FROM tblRecipeIngredient ri 
             JOIN tblRecipe re ON re.RecipeID = ri.RecipeID
             WHERE ri.RecipeID = @RecipeID
@@ -1546,7 +1545,7 @@ async function mulRecipe(recipeID, num) {
 
 async function quantityCheck(ing) {
     try {
-        await poolConnect; // Ensure the pool is connected
+        await poolConnect; 
         const request = pool.request();
         request.input('IngredientID', sql.NVarChar, ing.IngredientID);
         const check = await request.query(`
@@ -1563,15 +1562,14 @@ async function quantityCheck(ing) {
 
 async function deductInventory(ing) {
     try {
-        await poolConnect; // Ensure the pool is connected
-        const request = pool.request(); // Use the pool connection
+        await poolConnect; 
+        const request = pool.request(); 
 
         request.input('IngredientID', sql.NVarChar, ing.IngredientID);
         
-        let curr = ing.ScaledQuantity;  // Initialize 'curr' with the required quantity
+        let curr = ing.ScaledQuantity;  
         
         while (curr > 0) {
-            // Fetch the row we will subtract from
             const result1 = await request.query(`
                 SELECT TOP 1 *
                 FROM tblInventory inv
@@ -1594,7 +1592,10 @@ async function deductInventory(ing) {
                     WHERE tblInventory.EntityID = @EntityID
                 `);
             } else {  // There's still some quantity left
-                request.input('NewQuantity', sql.Float, newQuantity * -1);
+                request.input('NewQuantity', sql.Float, newQuantity); 
+                //REMOVED * -1: Was just making everything a negative. 
+                //If a recipe needed 1 kilo butter and we had 1000 in inventory.
+                //It would use 1001 butter and leave us with -999
                 await request.query(`
                     UPDATE tblInventory
                     SET Quantity = @NewQuantity
