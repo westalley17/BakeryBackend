@@ -1180,18 +1180,12 @@ app.get('/api/checkRecipeIngredients', async (req, res) => {
             .execute('CheckRecipeIngredients');
 
         let responseArray = result.recordset.map(row => {
-            let isSufficient;
-            if (row.IsSufficient === 'TRUE') {
-                isSufficient = 1;
-            } else {
-                isSufficient = 0;
-            }
-            return `{RecipeID: ${row.IngredientID}, available: ${isSufficient}}`;
+            let isSufficient = (row.IsSufficient === 'TRUE') ? 1 : 0;
+            return { RecipeID: row.IngredientID, available: isSufficient };
         });
-
-        let responseString = [responseArray.join(',')];
-
-        res.status(200).json(responseString);
+        
+        res.status(200).json(responseArray);
+            
     } catch (error) {
         console.error('Error fetching ingredients:', error);
         res.status(500).json({ message: 'Error fetching ingredients' });
