@@ -1063,7 +1063,7 @@ app.get('/api/sessions', async (req, res) => {
 
 //Recipe GET
 app.get('/api/recipe', async (req, res) => {
-    recipeName = req.params.name;
+    recipeName = req.query.name;
     if(recipeName){
         try {
             const recipe = await getRecipeFromDb(recipeName);
@@ -1525,124 +1525,143 @@ app.post('/api/clockout', async (req, res) => {
 
 
 
-async function mulRecipe(recipeID, num) {	// Used for doubling, tripling, etc. a recipe for startBaking
-	try{
-		const request = new sql.Request();
-		request.input('RecipeID', sql.NVarChar, recipeID);
-		request.input('num', sql.Float, num);
-		const result = await request.query(`
-			SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * @num AS ScaledQuantity 
-			FROM tblRecipeIngredient ri JOIN tblRecipe re ON re.RecipeID = ri.RecipeID
-			WHERE ri.RecipeID = @RecipeID
-			`);						// Returns relevent tblRecipeIngredients stuff for our specific recipe, AND replaces 'Quantity' with
-		return result.recordset; 	// 'ScaledQuantity', which has just been multiplied by num
-	} catch (error) {
+async function mulRecipe(recipeID, num) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+        request.input('RecipeID', sql.NVarChar, recipeID);
+        request.input('num', sql.Float, num);
+        const result = await request.query(`
+            SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * @num AS ScaledQuantity 
+            FROM tblRecipeIngredient ri 
+            JOIN tblRecipe re ON re.RecipeID = ri.RecipeID
+            WHERE ri.RecipeID = @RecipeID
+        `);
+        return result.recordset;
+    } catch (error) {
         console.error('Error multiplying recipe:', error);
         throw error;
     }
 }
 
-async function quantityCheck(ing) { 	// Returns a bool that throws an error if false, checking to see if we have the proper amount in inventory for an ingredient
-	try{
-		const request = new sql.Request();
-		request.input('IngredientID', sql.NVarChar, ing.IngredientID);
-		const check = await request.query(`
-			SELECT SUM(inv.Quantity) AS TotalQuantity
-			FROM tblInventory inv
-			WHERE inv.IngredientID = @IngredientID AND GETDATE() <= inv.ExpireDateTime
-			)`);	// checking if the sum of usable quantities of an ingredient is enough to cover what we need to backe
-		return check.recordset[0].TotalQuantity < ing.ScaledQuantity; // If ScaledQuantity (what we need) is more than TotalQuantity (what we have), return true
-	} catch (error) {
-		console.error('Error checking valid quantities for recipe use ', error);
-	}
+async function quantityCheck(ing) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+        request.input('IngredientID', sql.NVarChar, ing.IngredientID);
+        const check = await request.query(`
+            SELECT SUM(inv.Quantity) AS TotalQuantity
+            FROM tblInventory inv
+            WHERE inv.IngredientID = @IngredientID AND GETDATE() <= inv.ExpireDateTime
+        `);
+        return check.recordset[0] && check.recordset[0].TotalQuantity < ing.ScaledQuantity;
+    } catch (error) {
+        console.error('Error checking valid quantities for recipe use:', error);
+        throw error;
+    }
 }
 
-async function deductInventory(ing) {	// Deducting the quantity needed 'curr' from the top inventory row that matches 'ing' 's IngredientID | NO RETURN VALUE
-	try{
-		const request = new sql.Request();
-		request.input('IngredientID', sql.NVarChar, ing.IngredientID);
-		request.input('curr', sql.Float, ing.ScaledQuantity);
-		
-		while (curr > 0){
-		// Fetch the row we will subtract from
-			let result1 = await request.query(`
-				SELECT TOP 1 *
-				FROM tblInventory inv
-				WHERE inv.IngredientID = @IngredientID AND GETDATE() <= inv.ExpireDateTime AND inv.Quantity > 0
-				ORDER BY inv.ExpireDateTime
-				)`);
-			let invItem = result1.recordset; // i think this is how you use 'let'
-			let newQuantity = invItem.Quantity - curr; // Subtracting what we need from the row
-			curr = newQuantity * -1; // Represents how much more we need
-			request.input('EntityID', sql.NVarChar, invItem.EntityID);
-			if (newQuantity <= 0){	// Meaning we just took ALL the quantity from that row, so we can just delete it
-				let result2 = await request.query(`
-					DELETE FROM tblInventory
-					WHERE tblInventory.EntityID = @EntityID
-				`);
-			}
-			else{	// Meaning there's still some quantity that will be left over after taking some out, we update the table to what's left
-				let result2 = await request.query(`
-					UPDATE tblInventory inv
-					SET inv.Quantity = @curr * -1
-					WHERE inv.EntityID = @EntityID
-				`);
-			}
-		}	// If curr still holds a positive value (there's still more we need to take from inventory), we loop again
-	} catch (error) {
-		console.error('Error deducting from inventory for baking (something terrible has happened!): ', error);
-	}
+async function deductInventory(ing) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request(); // Use the pool connection
+
+        request.input('IngredientID', sql.NVarChar, ing.IngredientID);
+        
+        let curr = ing.ScaledQuantity;  // Initialize 'curr' with the required quantity
+        
+        while (curr > 0) {
+            // Fetch the row we will subtract from
+            const result1 = await request.query(`
+                SELECT TOP 1 *
+                FROM tblInventory inv
+                WHERE inv.IngredientID = @IngredientID AND GETDATE() <= inv.ExpireDateTime AND inv.Quantity > 0
+                ORDER BY inv.ExpireDateTime
+            `);
+            
+            if (result1.recordset.length === 0) {
+                throw new Error('Not enough inventory available.');
+            }
+            
+            let invItem = result1.recordset[0];  // Get the top inventory item
+            let newQuantity = invItem.Quantity - curr;  // Calculate the new quantity
+            curr = newQuantity * -1;  // Remaining quantity needed (if negative, it means we need more)
+            
+            request.input('EntityID', sql.NVarChar, invItem.EntityID);
+            if (newQuantity <= 0) {  // If we took all the quantity from that row
+                await request.query(`
+                    DELETE FROM tblInventory
+                    WHERE tblInventory.EntityID = @EntityID
+                `);
+            } else {  // There's still some quantity left
+                request.input('NewQuantity', sql.Float, newQuantity * -1);
+                await request.query(`
+                    UPDATE tblInventory
+                    SET Quantity = @NewQuantity
+                    WHERE EntityID = @EntityID
+                `);
+            }
+        } 
+    } catch (error) {
+        console.error('Error deducting from inventory for baking:', error);
+        throw error;
+    }
 }
+
+
 
 async function stockAfterBake(recipe, num) {
-	try{
-		const request = new sql.Request();
-		const stockID = uuid.v4();  // have to generate since we're making a new stock entity
-		request.input('ProductID', sql.NVarChar, recipe.ProductID);
-		request.input('NewAmount', sql.Float, num * recipe.YieldAmount);
-		request.input('StockID', sql.NVarChar, stockID);
-		return1 = await request.query(`
-			INSERT INTO tblStock st (st.StockID, st.ProductID, st.CreateDateTime, st.ExpireDateTime, st.Amount)
-			VALUES (@StockID, @ProductID, GETDATE(), DATEADD(day, 5, GETDATE()), @NewAmount)
-			`);	// At the moment, expiredatetime is just set to be five days after createdatetime. likely need to add attribute into tblProduct to represent shelf-life
-		console.log('Stock added successfully.');
-		
-	} catch (error) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+        const stockID = uuid.v4();
+        request.input('ProductID', sql.NVarChar, recipe.ProductID);
+        request.input('NewAmount', sql.Float, num * recipe.YieldAmount);
+        request.input('StockID', sql.NVarChar, stockID);
+        await request.query(`
+            INSERT INTO tblStock (StockID, ProductID, CreateDateTime, ExpireDateTime, Amount)
+            VALUES (@StockID, @ProductID, GETDATE(), DATEADD(day, 5, GETDATE()), @NewAmount)
+        `);
+        console.log('Stock added successfully.');
+    } catch (error) {
         console.error('Error adding created products:', error);
         throw error;
-	}
+    }
 }
 
-//Start baking | UNTESTED, CAREFUL!
-//Deducting the ingredients used in a recipe from the inventory, and then making new stock as a result 
 app.post('/api/startBaking', async (req, res) => {
-	// 1) Get the recipe amount used for each ingredient
-	const recipeName = req.query.name;
-	if (recipeName){
-		try{
-			const recipe = await getRecipeFromDb(recipeName);
-		//	const{num} = req.body;
-			const num = 1.0;
-			const quantities = await mulRecipe(recipe.RecipeID, num); // num is what we're scaling the recipe by, it's set to 1 right now
-	// 2) Get make sure that the amount is NOT more than what exists in inventory
-			quantities.forEach(ing =>{	// unfortunately we can't call request.query in loops like this so we have to call a function to do it for each ingredient
-				if (quantityCheck(ing)) throw 'One or more ingredient quantities is invalid.';  // If the check comes back true, throw an error, we can't make the recipe
-			});
-	// 3) Go to inventory and subtract the specified amount (THIS CAN NOT FAIL!!!!!!)
-			quantities.forEach(ing =>{	
-				deductInventory(ing);	// The Big Bilfer :tm:
-			})
-	// 4) INSERT the new products into the product table
-			stockAfterBake(recipe, num); // num needed for scaled amount of products
-		}
-		catch(error){
-			console.error('Error using recipe: ', error);
+    const recipeName = req.query.name;
+    if (recipeName) {
+        try {
+            const recipe = await getRecipeFromDb(recipeName);
+            
+            if (!recipe) {
+                return res.status(404).json({ error: 'Recipe not found' });
+            }
+            const num = 1.0;
+            const quantities = await mulRecipe(recipe.RecipeID, num);
+
+            for (let ing of quantities) {
+                if (await quantityCheck(ing)) {
+                    throw new Error('One or more ingredient quantities are invalid.');
+                }
+            }
+
+            for (let ing of quantities) {
+                await deductInventory(ing);
+            }
+
+            await stockAfterBake(recipe, num);
+            res.status(200).json({ message: 'Baking process completed successfully' });
+        } catch (error) {
+            console.error('Error using recipe: ', error);
             res.status(500).json({ error: 'Internal server error', message: error.message });
-		}
-	} else {
+        }
+    } else {
         res.status(400).json({ error: 'Recipe name is required' });
     }
 });
+
 
 // Initialize the database tables and start the server
 createTables()
