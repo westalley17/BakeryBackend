@@ -1532,7 +1532,7 @@ async function mulRecipe(recipeID, num) {	// Used for doubling, tripling, etc. a
 		request.input('num', sql.Float, num);
 		const result = await request.query(`
 			SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * @num AS ScaledQuantity 
-			FROM tblRecipeIngredients ri JOIN tblRecipe re ON re.RecipeID = ri.RecipeID
+			FROM tblRecipeIngredient ri JOIN tblRecipe re ON re.RecipeID = ri.RecipeID
 			WHERE ri.RecipeID = @RecipeID
 			`);						// Returns relevent tblRecipeIngredients stuff for our specific recipe, AND replaces 'Quantity' with
 		return result.recordset; 	// 'ScaledQuantity', which has just been multiplied by num
