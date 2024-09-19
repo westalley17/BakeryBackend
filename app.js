@@ -875,14 +875,14 @@ async function authenticateManager(username, password) {
 
 // this will most likely need to be a LOT more complicated to accomodate for the getRecipeInfo route
 // that will need to be created later
-async function getRecipeFromDb(recipeID) {
+async function getRecipeFromDb(recipeNmae) {
     try {
         //Connecting
         const request = pool.request();
 
         //Query to fetch
-        const result = await request.input('RecipeID', sql.NVarChar, recipeID)
-                                    .query(`SELECT * FROM tblRecipe WHERE RecipeID = @RecipeID`);
+        const result = await request.input('RecipeName', sql.NVarChar, recipeNmae)
+                                    .query(`SELECT * FROM tblRecipe WHERE Name = @RecipeName`);
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
@@ -1063,7 +1063,7 @@ app.get('/api/sessions', async (req, res) => {
 
 //Recipe GET
 app.get('/api/recipe', async (req, res) => {
-    recipeName = req.query.name;
+    const recipeName = req.query.name;
     if(recipeName){
         try {
             const recipe = await getRecipeFromDb(recipeName);
