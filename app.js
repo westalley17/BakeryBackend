@@ -1563,6 +1563,7 @@ async function deductInventory(ing) {	// Deducting the quantity needed 'curr' fr
 		request.input('IngredientID', sql.NVarChar, ing.IngredientID);
 		request.input('curr', sql.Float, ing.ScaledQuantity);
 		
+        let curr = ing.ScaledQuantity;
 		while (curr > 0){
 		// Fetch the row we will subtract from
 			let result1 = await request.query(`
