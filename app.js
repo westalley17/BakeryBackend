@@ -1243,6 +1243,8 @@ app.post('/api/productCategory', async (req, res) => {
 });
 
 
+
+
 // Function to add a product
 async function addProduct(newProduct) {
     try {
@@ -1434,6 +1436,94 @@ app.post('/api/ingredient', async (req, res) => {
         res.status(500).send('Internal server error');
     }
 });
+
+//POST to add clock in time, userID, and dayID
+app.post('/api/clockin', async (req, res) => {
+    const { userID } = req.body;
+
+    if (!userID) {
+        return res.status(400).json({ error: 'userID is required' });
+    }
+
+    try {
+        await poolConnect; 
+        const request = pool.request();
+
+        const currentDateTime = new Date();//gets the current date and time
+        const currentDate = currentDateTime.toISOString().split('T')[0]; //Formats the date as YYYY-MM-DD'T'HOUR:MINUTE:SECOND
+
+        const dayResult = await request //Grabs the dayID from tblDay. ALWAYs works if ran in 2024
+            .input('currentDate', sql.Date, currentDate)
+            .query(`SELECT dayID FROM tblday WHERE date = @currentDate`);
+
+        if (dayResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'No dayID found for today\'s date' });
+        }
+
+        const dayID = dayResult.recordset[0].dayID;
+
+        await request
+            .input('logID', sql.NVarChar, uuid.v4())
+            .input('userID', sql.NVarChar, userID)
+            .input('dayID', sql.NVarChar, dayID)
+            .input('clockInTime', sql.DateTime, currentDateTime)
+            .input('isHoliday', sql.Bit, 0) 
+            .query(`INSERT INTO tblLog (logID, userID, dayID, clockInTime, clockOutTime, isHoliday) 
+                    VALUES (@logID, @userID, @dayID, @clockInTime, NULL, @isHoliday)`);
+
+        res.status(200).json({ message: 'Clock-in time recorded successfully' });
+    } catch (error) {
+        console.error('Error recording clock-in time:', error);
+        res.status(500).send('Error recording clock-in time');
+    }
+});
+
+//POST to add clock out time, userID, and dayID
+app.post('/api/clockout', async (req, res) => {
+    const { userID } = req.body;
+
+    if (!userID) {
+        return res.status(400).json({ error: 'userID is required' });
+    }
+
+    try {
+        await poolConnect;
+        const request = pool.request();
+
+       
+        const currentDateTime = new Date();  //Gets the current date and time
+        const currentDate = currentDateTime.toISOString().split('T')[0]; //Formats the date as YYYY-MM-DD'T'HOUR:MINUTE:SECOND
+
+        const dayResult = await request //Grabs the dayID from tblDay. ALWAYs works if ran in 2024
+            .input('currentDate', sql.Date, currentDate)
+            .query(`SELECT dayID FROM tblday WHERE date = @currentDate`);
+
+        if (dayResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'No dayID found for today\'s date' });
+        }
+
+        const dayID = dayResult.recordset[0].dayID;
+
+        const result = await request
+            .input('userID', sql.NVarChar, userID)
+            .input('dayID', sql.NVarChar, dayID)
+            .input('clockOutTime', sql.DateTime, currentDateTime)
+            .query(`UPDATE tblLog SET clockOutTime = @clockOutTime 
+                    WHERE userID = @userID AND dayID = @dayID`);
+
+        if (result.rowsAffected[0] > 0) {
+            res.status(200).json({ message: 'Clock-out time recorded successfully' });
+        } else {
+            res.status(404).json({ error: 'Log entry not found' });
+        }
+    } catch (error) {
+        console.error('Error updating clock-out time:', error);
+        res.status(500).send('Error updating clock-out time');
+    }
+});
+
+
+
 
 async function mulRecipe(recipeID, num) {	// Used for doubling, tripling, etc. a recipe for startBaking
 	try{
