@@ -875,14 +875,14 @@ async function authenticateManager(username, password) {
 
 // this will most likely need to be a LOT more complicated to accomodate for the getRecipeInfo route
 // that will need to be created later
-async function getRecipeFromDb(recipeName) {
+async function getRecipeFromDb(recipeID) {
     try {
         //Connecting
         const request = pool.request();
 
         //Query to fetch
-        const result = await request.input('Recipe', sql.NVarChar, recipeName)
-                                    .query(`SELECT * FROM tblRecipe WHERE Name = @Recipe`);
+        const result = await request.input('RecipeID', sql.NVarChar, recipeID)
+                                    .query(`SELECT * FROM tblRecipe WHERE RecipeID = @RecipeID`);
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
@@ -1527,23 +1527,22 @@ async function stockAfterBake(recipe, num) {
 //Deducting the ingredients used in a recipe from the inventory, and then making new stock as a result 
 app.post('/api/startBaking', async (req, res) => {
 	// 1) Get the recipe amount used for each ingredient
-	const recipeName = req.query.name;
-	if (recipeName){
+	const { recipeID, num } = req.body;
+	if (recipeID){
 		try{
-			const recipe = await getRecipeFromDb(recipeName);
-		//	const{num} = req.body;
-			const num = 1.0;
-			const quantities = await mulRecipe(recipe.RecipeID, num); // num is what we're scaling the recipe by, it's set to 1 right now
+			const recipe = await getRecipeFromDb(recipeID);
+			const quantities = await mulRecipe(recipeID, num); // num is what we're scaling the recipe by, it's set to 1 right now
 	// 2) Get make sure that the amount is NOT more than what exists in inventory
-			quantities.forEach(ing =>{	// unfortunately we can't call request.query in loops like this so we have to call a function to do it for each ingredient
+			quantities.forEach(ing => {	// unfortunately we can't call request.query in loops like this so we have to call a function to do it for each ingredient
 				if (quantityCheck(ing)) throw 'One or more ingredient quantities is invalid.';  // If the check comes back true, throw an error, we can't make the recipe
 			});
 	// 3) Go to inventory and subtract the specified amount (THIS CAN NOT FAIL!!!!!!)
-			quantities.forEach(ing =>{	
+			quantities.forEach(ing => {	
 				deductInventory(ing);	// The Big Bilfer :tm:
 			})
 	// 4) INSERT the new products into the product table
 			stockAfterBake(recipe, num); // num needed for scaled amount of products
+            res.status(200).json({ message: 'It is in the oven!' });
 		}
 		catch(error){
 			console.error('Error using recipe: ', error);
