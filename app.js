@@ -1136,6 +1136,35 @@ app.get('/api/ingredient', async (req, res) => {
         res.status(500).send('Error fetching ingredient');
     }
 });
+
+//Get Ingredient Info
+app.get('/api/ingredientInfo', async (req, res) => {
+    const { ingredientID } = req.query;
+
+    if (ingredientID) {
+        try {
+            const request = pool.request();
+            let query = '';
+            request.input('IngredientID', sql.NVarChar, ingredientID);
+            query = 'SELECT * FROM vwIngredientInfo WHERE IngredientID = @IngredientID';
+
+            const result = await request.query(query);
+            const ingredientInfo = result.recordset[0]; // Retrieve the first record
+
+            if (ingredientInfo) {
+                res.status(200).json(ingredientInfo);
+            } else {
+                res.status(404).send('Ingredient not found');
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Error fetching ingredient information');
+        }
+    } else {
+        res.status(400).json({ error: 'Ingredient name or ID is required' });
+    }
+});
+
 // Recipe Get info 
 app.get('/api/recipeInfo', async (req, res) => {
     const { recipeID } = req.query;
