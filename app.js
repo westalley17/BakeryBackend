@@ -962,6 +962,30 @@ async function getRecipeNames(category)
     }
 }
 
+// probably going to need this one to be able to pull the names depending on the category its in.
+async function getIngredientNames(category)
+{
+    try {
+        //Connecting
+        const request = pool.request();
+
+        // fetch all recipe names associated with a category (i.e., category = cake, result should be "[chocolate, strawberry, vanilla...]")
+        const result = await request.input('Category', sql.NVarChar, category)
+                                    .query(`SELECT i.IngredientID, i.Name 
+                                            FROM tblIngredient i JOIN tblProduct p ON i.ProductID = p.ProductID JOIN tblProductCategory pc 
+                                            ON p.ProductCategoryID = pc.ProductCategoryID WHERE pc.Name = @Category;`);
+
+        if (!result) {
+            return null;
+        }
+
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
 // Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
@@ -1164,6 +1188,25 @@ app.delete('/api/ingredient', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });     
+
+//IngredientNames GET
+app.get('/api/ingredientNames', async (req, res) => {
+    try {
+        const { category } = req.query;
+        const ingredientNames = await getIngredientNames(category);
+
+        if(ingredientNames) {
+            if (ingredientNames.length > 0) {
+                res.status(200).json(ingredientNames);
+            } else {
+                res.status(404).send('No ingredients found');
+            }
+        }
+    } catch (error) {
+        res.status(500).send('Error retrieving ingredients');
+        res.status(500).json({ error: 'Error retrieving ingredients', message: error.message });
+    }
+});
 
 //Get Ingredient Info
 app.get('/api/ingredientInfo', async (req, res) => {
