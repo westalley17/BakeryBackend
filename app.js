@@ -760,7 +760,7 @@ async function findUser(username) {
 // Add a new user
 async function addUser(newUser) {
     try {
-        const existingUser = await finduser(newUser.Username);
+        const existingUser = await findUser(newUser.Username);
         if (existingUser) {
             throw new Error('new user already exists'); //did not check for new user originally 
         }
