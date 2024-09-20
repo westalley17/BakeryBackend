@@ -825,11 +825,24 @@ async function removeSession(SessionID) {
     }
 }
 
+//Removes a Recipe
 async function removeRecipe(recipeID) {
     try {
         const request = pool.request();
         await request.input('RecipeID', sql.NVarChar, recipeID)
                         .query('DELETE FROM tblRecipe WHERE RecipeID = @RecipeID');
+    } catch (error) {
+        throw error;
+    }
+}
+
+//Removes an Ingredient
+async function removeIngredient(ingredientID)
+{
+    try {
+        const request = pool.request();
+        await request.input('IngredientID', sql.NVarChar, ingredientID)
+                        .query('DELETE FROM tblIngredient WHERE IngredientID = @IngredientID');
     } catch (error) {
         throw error;
     }
@@ -1136,6 +1149,21 @@ app.get('/api/ingredient', async (req, res) => {
         res.status(500).send('Error fetching ingredient');
     }
 });
+
+//Ingredient DELETE
+app.delete('/api/ingredient', async (req, res) => {
+    try {
+        const { ingredientID } = req.body;
+
+        //Removes
+        await removeIngredient(ingredientID);
+
+        //Destroys
+        res.status(200).json({ message: 'Ingredient Successfully Deleted'});
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});     
 
 //Get Ingredient Info
 app.get('/api/ingredientInfo', async (req, res) => {
