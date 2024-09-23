@@ -555,9 +555,9 @@ async function createTables() {
                     Description NVARCHAR(50) NOT NULL,
                     IngredientCategoryID NVARCHAR(50) NOT NULL,
                     Measurement NVARCHAR(50) NOT NULL,
-                    MaxAmount DECIMAL(6,2) NOT NULL,
-                    ReorderAmount DECIMAL(6,2) NOT NULL,
-                    MinAmount DECIMAL(6,2) NOT NULL,
+                    MaxAmount DECIMAL(10,2) NOT NULL,
+                    ReorderAmount DECIMAL(10,2) NOT NULL,
+                    MinAmount DECIMAL(10,2) NOT NULL,
                     Allergen BIT NOT NULL,
                     FOREIGN KEY (IngredientCategoryID) REFERENCES tblIngredientCategory(IngredientCategoryID) ON DELETE CASCADE
                 )
@@ -569,10 +569,10 @@ async function createTables() {
                 CREATE TABLE tblInventory (
                     EntityID NVARCHAR(50) PRIMARY KEY,
                     IngredientID NVARCHAR(50) NOT NULL,
-                    Quantity DECIMAL(6,2) NOT NULL,
+                    Quantity DECIMAL(10,2) NOT NULL,
                     UserID NVARCHAR(50) NOT NULL,
                     Notes NVARCHAR(50),
-                    Cost DECIMAL(6,2) NOT NULL,
+                    Cost DECIMAL(10,2) NOT NULL,
                     CreateDateTime DATETIME NOT NULL,
                     ExpireDateTime DATETIME NOT NULL,
                     PONumber NVARCHAR(50),
@@ -580,6 +580,7 @@ async function createTables() {
                     FOREIGN KEY (UserID) REFERENCES tblUser(UserID)
                 )
             `);
+
 
 		// Create tblProductCategory
 		await request.query(`
@@ -611,7 +612,7 @@ async function createTables() {
 				ProductID NVARCHAR(50) NOT NULL,
 				CreateDateTime DATETIME NOT NULL,
 				ExpireDateTime DATETIME NOT NULL,
-				Amount DECIMAL(6,2),
+				Amount DECIMAL(10,2),
 				FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID)
 			)
 		`);
@@ -673,7 +674,7 @@ async function createTables() {
 			CREATE TABLE tblRecipeIngredient (
 				RecipeID NVARCHAR(50) NOT NULL,
 				IngredientID NVARCHAR(50) NOT NULL,
-				Quantity DECIMAL(6,2) NOT NULL,
+				Quantity DECIMAL(10,2) NOT NULL,
 				PRIMARY KEY (RecipeID, IngredientID),
 				FOREIGN KEY (RecipeID) REFERENCES tblRecipe(RecipeID),
 				FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
@@ -1405,9 +1406,9 @@ async function addIngredient(newIngredient) {
         request.input('Description', sql.NVarChar, newIngredient.Description);
         request.input('IngredientCategoryID', sql.NVarChar, newIngredient.IngredientCategoryID);
         request.input('Measurement', sql.NVarChar, newIngredient.Measurement);
-        request.input('MaxAmount', sql.Decimal(6, 2), newIngredient.MaxAmount);
-        request.input('ReorderAmount', sql.Decimal(6, 2), newIngredient.ReorderAmount);
-        request.input('MinAmount', sql.Decimal(6, 2), newIngredient.MinAmount);
+        request.input('MaxAmount', sql.Decimal(10, 2), newIngredient.MaxAmount);
+        request.input('ReorderAmount', sql.Decimal(10, 2), newIngredient.ReorderAmount);
+        request.input('MinAmount', sql.Decimal(10, 2), newIngredient.MinAmount);
         request.input('Allergen', sql.Bit, newIngredient.Allergen);
 
         // Execute the query
