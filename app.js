@@ -1625,6 +1625,7 @@ app.post('/api/clockout', async (req, res) => {
 
 
 
+
 async function mulRecipe(recipeID, num) {
     try {
         await poolConnect; // Ensure the pool is connected
@@ -1664,13 +1665,16 @@ async function quantityCheck(ing) {
 async function deductInventory(ing) {
     try {
         await poolConnect; 
-        const request = pool.request(); 
-
-        request.input('IngredientID', sql.NVarChar, ing.IngredientID);
-        
         let curr = ing.ScaledQuantity;  
-        
-        while (curr > 0) {
+        while (curr > 0) 
+            {
+
+            const request = pool.request();  
+            request.input('IngredientID', sql.NVarChar, ing.IngredientID);
+            //moved here so that it will grab a new ingredient each time that is in the inventory
+            //when it was outside the loop it was grabbing one instance of each ingredient for the entire recipe
+                //So if we had an instance of 10 and one of 1000, it would use the oldest(10), delete that ingredient instance in the inventory table
+                //Then when it tried to use it, since there was not a new instance of an ingredient grabbed, it broke
             const result1 = await request.query(`
                 SELECT TOP 1 *
                 FROM tblInventory inv
