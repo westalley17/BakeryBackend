@@ -889,14 +889,14 @@ async function authenticateManager(username, password) {
 
 // this will most likely need to be a LOT more complicated to accomodate for the getRecipeInfo route
 // that will need to be created later
-async function getRecipeFromDb(recipeNmae) {
+async function getRecipeFromDb(recipeID) {
     try {
         //Connecting
         const request = pool.request();
 
         //Query to fetch
-        const result = await request.input('RecipeName', sql.NVarChar, recipeNmae)
-                                    .query(`SELECT * FROM tblRecipe WHERE Name = @RecipeName`);
+        const result = await request.input('RecipeID', sql.NVarChar, recipeID)
+                                    .query(`SELECT * FROM tblRecipe WHERE RecipeID = @RecipeID`);
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
@@ -1101,10 +1101,10 @@ app.get('/api/sessions', async (req, res) => {
 
 //Recipe GET
 app.get('/api/recipe', async (req, res) => {
-    const recipeName = req.query.name;
-    if(recipeName){
+    const recipeID = req.query.id;
+    if(recipeID){
         try {
-            const recipe = await getRecipeFromDb(recipeName);
+            const recipe = await getRecipeFromDb(recipeID);
 
             if (recipe) {
                 res.status(200).json(recipe);   //Sends as a JSON response
@@ -1732,16 +1732,15 @@ async function stockAfterBake(recipe, num) {
 }
 
 app.post('/api/startBaking', async (req, res) => {
-    const recipeName = req.query.name;
-    if (recipeName) {
+    const {recipeID, num} = req.body;
+    if (recipeID) {
         try {
-            const recipe = await getRecipeFromDb(recipeName);
+            const recipe = await getRecipeFromDb(recipeID);
             
             if (!recipe) {
                 return res.status(404).json({ error: 'Recipe not found' });
             }
-            const num = 1.0;
-            const quantities = await mulRecipe(recipe.RecipeID, num);
+            const quantities = await mulRecipe(recipeID, num);
 
             for (let ing of quantities) {
                 if (await quantityCheck(ing)) {
