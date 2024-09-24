@@ -1632,7 +1632,7 @@ async function mulRecipe(recipeID, num) {
         request.input('RecipeID', sql.NVarChar, recipeID);
         request.input('num', sql.Float, num);
         const result = await request.query(`
-            SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * 2 AS ScaledQuantity 
+            SELECT ri.RecipeID, ri.IngredientID, re.ProductID, ri.Quantity * 1 AS ScaledQuantity 
             FROM tblRecipeIngredient ri 
             JOIN tblRecipe re ON re.RecipeID = ri.RecipeID
             WHERE ri.RecipeID = @RecipeID
