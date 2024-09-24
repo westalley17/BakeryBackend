@@ -825,11 +825,24 @@ async function removeSession(SessionID) {
     }
 }
 
+//Removes a Recipe
 async function removeRecipe(recipeID) {
     try {
         const request = pool.request();
         await request.input('RecipeID', sql.NVarChar, recipeID)
                         .query('DELETE FROM tblRecipe WHERE RecipeID = @RecipeID');
+    } catch (error) {
+        throw error;
+    }
+}
+
+//Removes an Ingredient
+async function removeIngredient(ingredientID)
+{
+    try {
+        const request = pool.request();
+        await request.input('IngredientID', sql.NVarChar, ingredientID)
+                        .query('DELETE FROM tblIngredient WHERE IngredientID = @IngredientID');
     } catch (error) {
         throw error;
     }
@@ -936,6 +949,30 @@ async function getRecipeNames(category)
         const result = await request.input('Category', sql.NVarChar, category)
                                     .query(`SELECT r.RecipeID, r.Name 
                                             FROM tblRecipe r JOIN tblProduct p ON r.ProductID = p.ProductID JOIN tblProductCategory pc 
+                                            ON p.ProductCategoryID = pc.ProductCategoryID WHERE pc.Name = @Category;`);
+
+        if (!result) {
+            return null;
+        }
+
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+// probably going to need this one to be able to pull the names depending on the category its in.
+async function getIngredientNames(category)
+{
+    try {
+        //Connecting
+        const request = pool.request();
+
+        // fetch all recipe names associated with a category (i.e., category = cake, result should be "[chocolate, strawberry, vanilla...]")
+        const result = await request.input('Category', sql.NVarChar, category)
+                                    .query(`SELECT i.IngredientID, i.Name 
+                                            FROM tblIngredient i JOIN tblProduct p ON i.ProductID = p.ProductID JOIN tblProductCategory pc 
                                             ON p.ProductCategoryID = pc.ProductCategoryID WHERE pc.Name = @Category;`);
 
         if (!result) {
@@ -1136,6 +1173,69 @@ app.get('/api/ingredient', async (req, res) => {
         res.status(500).send('Error fetching ingredient');
     }
 });
+
+//Ingredient DELETE
+app.delete('/api/ingredient', async (req, res) => {
+    try {
+        const { ingredientID } = req.body;
+
+        //Removes
+        await removeIngredient(ingredientID);
+
+        //Destroys
+        res.status(200).json({ message: 'Ingredient Successfully Deleted'});
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});     
+
+//IngredientNames GET
+app.get('/api/ingredientNames', async (req, res) => {
+    try {
+        const { category } = req.query;
+        const ingredientNames = await getIngredientNames(category);
+
+        if(ingredientNames) {
+            if (ingredientNames.length > 0) {
+                res.status(200).json(ingredientNames);
+            } else {
+                res.status(404).send('No ingredients found');
+            }
+        }
+    } catch (error) {
+        res.status(500).send('Error retrieving ingredients');
+        res.status(500).json({ error: 'Error retrieving ingredients', message: error.message });
+    }
+});
+
+//Get Ingredient Info
+app.get('/api/ingredientInfo', async (req, res) => {
+    const { ingredientID } = req.query;
+
+    if (ingredientID) {
+        try {
+            const request = pool.request();
+            let query = '';
+            request.input('IngredientID', sql.NVarChar, ingredientID);
+            query = 'SELECT * FROM vwIngredientInfo WHERE IngredientID = @IngredientID';
+
+            const result = await request.query(query);
+            const ingredientInfo = result.recordset[0]; // Retrieve the first record
+
+            if (ingredientInfo) {
+                res.status(200).json(ingredientInfo);
+            } else {
+                res.status(404).send('Ingredient not found');
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Error fetching ingredient information');
+        }
+    } else {
+        res.status(400).json({ error: 'Ingredient name or ID is required' });
+    }
+});
+
 // Recipe Get info 
 app.get('/api/recipeInfo', async (req, res) => {
     const { recipeID } = req.query;
