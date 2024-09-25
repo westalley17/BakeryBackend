@@ -328,9 +328,11 @@ async function createTables() {
                     TypeID NVARCHAR(50),
                     Valid BIT,
                     UserType BIT,
+                    vendorID NVARCHAR(50),
                     UNIQUE (EmailAddress),
                     FOREIGN KEY (TypeID) REFERENCES tblEmailType(TypeID),
-                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE
+                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE,
+                    FOREIGN KEY (vendorID)REFERENCES tblVendor(VendorID) ON DELETE CASCADE
                 )
             `);
 
@@ -453,8 +455,11 @@ async function createTables() {
                     Valid BIT,
                     UserID NVARCHAR(50),
                     UserType BIT,
+                    vendorID NVARCHAR(50),
                     FOREIGN KEY (TypeID) REFERENCES tblPhoneNumberTypes(TypeID) ON DELETE CASCADE,
-                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE
+                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE,
+                    FOREIGN KEY (vendorID)REFERENCES tblVendor(VendorID) ON DELETE CASCADE
+
                 )
             `);
 
@@ -527,9 +532,11 @@ async function createTables() {
                     StateID NVARCHAR(50),
                     Valid BIT,
                     UserType BIT,
+                    vendorID NVARCHAR(50),
                     FOREIGN KEY (TypeID) REFERENCES tblAddressType(TypeID),
                     FOREIGN KEY (StateID) REFERENCES tblState(StateID),
-                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE
+                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE,
+                    FOREIGN KEY (vendorID)REFERENCES tblVendor(VendorID) ON DELETE CASCADE
                 )
             `);
 
