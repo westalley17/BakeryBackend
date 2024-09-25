@@ -740,7 +740,7 @@ async function createTables() {
 
         // Create tblVendorInfo
         await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblVandorInfo')
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblVendorInfo')
             CREATE TABLE tblVendorInfo(
                 VendorID nvarchar(50) PRIMARY KEY,
                 AddressID nvarchar(50) NOT NULL,
@@ -762,7 +762,7 @@ async function createTables() {
                 IngredientID nvarchar(50) NOT NULL,
                 IngredientQuantity DECIMAL(10,2),
                 IngredientPrice DECIMAL(10,2),
-                PricePerUnit DECIMAL (10,2)
+                PricePerUnit DECIMAL(10,2),
                 PRIMARY KEY (VendorID, IngredientID),
                 FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
                 FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
