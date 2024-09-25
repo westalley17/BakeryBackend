@@ -762,7 +762,7 @@ async function createTables() {
                 IngredientID nvarchar(50) NOT NULL,
                 IngredientQuantity DECIMAL(10,2),
                 IngredientPrice DECIMAL(10,2),
-                PricePerUnit DECIMAL(10,2),
+                PricePerUnit DECIMAL(10,4),
                 PRIMARY KEY (VendorID, IngredientID),
                 FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
                 FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
