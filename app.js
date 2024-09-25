@@ -124,6 +124,14 @@ class Recipe {
     }
 }
 
+class EmpTimesheet {
+    constructor(type_id, user_id)
+    {
+        this.TypeID = type_id;
+        this.UserID = user_id;
+    }
+}
+
 // Required modules
 const express = require('express');
 const session = require('express-session');
@@ -1041,6 +1049,31 @@ async function getIngredientNames(category)
     }
 }
 
+async function getTimesheetFromDb(typeID)
+{
+    try {
+        //Connecting
+        const request = pool.request();
+
+        //Query to fetch
+        const result = await request.input('TypeID', sql.NVarChar, typeID)
+                                    .query(`SELECT * FROM tblEmployeeTime WHERE TypeID = @TypeID`);
+
+        //Checks to make sure it exists
+        if (result.recordset.length == 0) {
+            return null; //Doesn't exist
+        }
+        
+        //Returns the whole object
+        const timesheet = result.recordset[0];
+        return new EmpTimesheet(timesheet.TypeID, timesheet.UserID);
+
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
 // Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
@@ -1189,6 +1222,26 @@ app.get('/api/recipeNames', async (req, res) => {
     } catch (error) {
         res.status(500).send('Error retrieving recipes');
         res.status(500).json({ error: 'Error retrieving recipes', message: error.message });
+    }
+});
+
+//Employee Timesheets GET
+app.get('/api/employeeTimesheet', async (req, res) => {
+    const typeID = req.query;
+    if(typeID){
+        try {
+            const timesheet = await getTimesheetFromDb(typeID);
+
+            if (timesheet) {
+                res.status(200).json(timesheet);   //Sends as a JSON response
+            } else {
+                res.status(404).send('Timesheet not found');
+            }
+        } catch (error) {
+            res.status(500).send('Error fetching timesheet');
+        }
+    } else {
+        res.status(500).json({ error: 'Internal serval error' });
     }
 });
 
