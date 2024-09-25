@@ -132,6 +132,22 @@ class EmpTimesheet {
     }
 }
 
+class Vendor {
+    constructor(vendor_id, vendor_name, address_id, phone_number_id, email_id, notes, ingredient_id, ingredient_quantity, ingredient_price, price_per_unit)
+    {
+        this.VendorID = vendor_id;
+        this.VendorName = vendor_name;
+        this.AddressID = address_id;
+        this.PhoneNumberID = phone_number_id;
+        this.EmailID = email_id;
+        this.Notes = notes;
+        this.IngredientID = ingredient_id;
+        this.IngredientQuantitiy = ingredient_quantity;
+        this.IngredientPrice = ingredient_price;
+        this.PricePerUnit = price_per_unit;
+    }
+}
+
 // Required modules
 const express = require('express');
 const session = require('express-session');
@@ -1074,6 +1090,37 @@ async function getTimesheetFromDb(typeID)
     }
 }
 
+//Vendor Delete Help
+async function removeVendor(vendorID) {
+    try {
+        const request = pool.request();
+        await request.input('VendorID', sql.NVarChar, vendorID)
+                        .query('DELETE FROM tblVendor WHERE VendorID = @VendorID');
+    } catch (error) {
+        throw error;
+    }
+}
+
+//getVendorNames help function
+async function getVendorNames(category)
+{
+    try {
+        //Connecting
+        const request = pool.request();
+
+        // fetch all recipe names associated with a category (i.e., category = cake, result should be "[chocolate, strawberry, vanilla...]")
+        const result = await request.query(`SELECT VendorName FROM tblRecipe`);
+        if (!result) {
+            return null;
+        }
+
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
 // Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
@@ -1874,6 +1921,38 @@ app.post('/api/startBaking', async (req, res) => {
     }
 });
 
+//DELETE for Vendor
+app.delete('/api/vendor', async (req, res) => {
+    try {
+        const { vendorID } = req.body;
+
+        //Removes
+        await removeVendor(vendorID);
+
+        //Destroys
+        res.status(200).json({ message: 'Vendor Successfully Deleted'});
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});              
+
+//VendorNames GET
+app.get('/api/vendorNames', async (req, res) => {
+    try {
+        const vendorNames = await getVendorNames();
+
+        if(vendorNames) {
+            if (vendorNames.length > 0) {
+                res.status(200).json(vendorNames);
+            } else {
+                res.status(404).send('No vendors found');
+            }
+        }
+    } catch (error) {
+        res.status(500).send('Error retrieving ingredients');
+        res.status(500).json({ error: 'Error retrieving ingredients', message: error.message });
+    }
+});
 
 // Initialize the database tables and start the server
 createTables()
