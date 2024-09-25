@@ -706,7 +706,7 @@ async function createTables() {
 			)	
 		`);
 
-
+        // Create tblLog
 		await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblLog')
 			CREATE TABLE tblLog (
@@ -719,9 +719,63 @@ async function createTables() {
                 FOREIGN KEY (userID) REFERENCES tblUser(userID) ON DELETE CASCADE,
                 FOREIGN KEY (dayID) REFERENCES tblday(dayID) ON DELETE CASCADE
 			)	
-		`)
+		`);
 
+        // Create tblVendor
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblVendor')
+            CREATE TABLE tblVendor (
+                VendorID nvarchar(50) PRIMARY KEY,
+                VendorName nvarchar(50) NOT NULL
+            )               
+        `);
 
+        // Create tblVendorInfo
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblVandorInfo')
+            CREATE TABLE tblVendorInfo(
+                VendorID nvarchar(50) PRIMARY KEY,
+                AddressID nvarchar(50) NOT NULL,
+                PhoneNumberID nvarchar(50) NOT NULL,
+                EmailID nvarchar(50) NOT NULL,
+                Notes nvarchar(50),
+                FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
+                FOREIGN KEY (AddressID) REFERENCES tblUserAddress(AddressID),
+                FOREIGN KEY (PhoneNumberID) REFERENCES tblPhoneNumber(PhoneNumberID),
+                FOREIGN KEY (EmailID) REFERENCES tblEmail(EmailID)
+            )
+        `);
+
+        // Create tblVendorIngredient
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblVendorIngredient')
+            CREATE TABLE tblVendorIngredient(
+                VendorID nvarchar(50) NOT NULL,
+                IngredientID nvarchar(50) NOT NULL,
+                IngredientQuantity DECIMAL(10,2),
+                IngredientPrice DECIMAL(10,2),
+                PricePerUnit DECIMAL (10,2)
+                PRIMARY KEY (VendorID, IngredientID),
+                FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
+                FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
+            )
+        `);
+        
+        // Create tblOrder
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblOrder')
+            CREATE TABLE tblOrder(
+                PONumber nvarchar(50) PRIMARY KEY,
+                VendorID nvarchar(50) NOT NULL,
+                IngredientID nvarchar(50) NOT NULL,
+                Quantity DECIMAL(10,2),
+                Price DECIMAL (10,2),
+                CreateDateTime DateTime,
+                FulfillDateTime DateTime DEFAULT NULL,
+                FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID),
+                FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
+            )
+        `);
 
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
         
