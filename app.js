@@ -739,7 +739,7 @@ async function createTables() {
                 PhoneNumberID nvarchar(50) NOT NULL,
                 EmailID nvarchar(50) NOT NULL,
                 Notes nvarchar(50),
-                FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID),
+                FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
                 FOREIGN KEY (AddressID) REFERENCES tblUserAddress(AddressID),
                 FOREIGN KEY (PhoneNumberID) REFERENCES tblPhoneNumber(PhoneNumberID),
                 FOREIGN KEY (EmailID) REFERENCES tblEmail(EmailID)
@@ -756,7 +756,7 @@ async function createTables() {
                 IngredientPrice DECIMAL(10,2),
                 PricePerUnit DECIMAL (10,2)
                 PRIMARY KEY (VendorID, IngredientID),
-                FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID),
+                FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
                 FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
             )
         `);
