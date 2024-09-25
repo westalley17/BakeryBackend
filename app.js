@@ -1025,23 +1025,59 @@ async function getRecipeNames(category)
     }
 }
 
-// probably going to need this one to be able to pull the names depending on the category its in.
-async function getIngredientNames(category)
+async function getIngredientNames()
 {
     try {
-        //Connecting
         const request = pool.request();
-
-        // fetch all recipe names associated with a category (i.e., category = cake, result should be "[chocolate, strawberry, vanilla...]")
-        const result = await request.input('Category', sql.NVarChar, category)
-                                    .query(`SELECT i.IngredientID, i.Name 
-                                            FROM tblIngredient i JOIN tblProduct p ON i.ProductID = p.ProductID JOIN tblProductCategory pc 
-                                            ON p.ProductCategoryID = pc.ProductCategoryID WHERE pc.Name = @Category;`);
-
+        const result = await request.query(`SELECT IngredientID, Name FROM tblIngredient;`);
         if (!result) {
             return null;
         }
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
 
+async function getVendorNames()
+{
+    try {
+        const request = pool.request();
+        const result = await request.query(`SELECT VendorID, VendorName FROM tblVendor;`);
+        if (!result) {
+            return null;
+        }
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+async function getProductNames()
+{
+    try {
+        const request = pool.request();
+        const result = await request.query(`SELECT ProductID, Name FROM tblProduct;`);
+        if (!result) {
+            return null;
+        }
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+async function getCleanEquipNames()
+{
+    try {
+        const request = pool.request();
+        const result = await request.query(`SELECT EquipmentID, Name FROM tblEquipment;`);
+        if (!result) {
+            return null;
+        }
         return result.recordset;
     } catch (error) {
         console.error('Database query error:', error);
@@ -1130,11 +1166,6 @@ app.post('/api/sessions/employee', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-
-
-
-
 
 // Login route for manager with frontend input validation
 app.post('/api/sessions/manager', async (req, res) => {
@@ -1297,15 +1328,32 @@ app.delete('/api/ingredient', async (req, res) => {
     }
 });     
 
-//IngredientNames GET
-app.get('/api/ingredientNames', async (req, res) => {
+// Retrieves list of InventoryItems (IngredientNames, VendorNames, etc)
+app.get('/api/inventoryItems', async (req, res) => {
     try {
         const { category } = req.query;
-        const ingredientNames = await getIngredientNames(category);
+        let inventoryItems; 
+        //await getinventoryItems();
+        if(category == "Ingredients") {
+            inventoryItems = await getIngredientNames();
+        }
+        else if(category == "Products") {
+            inventoryItems = await getProductNames();
+        }
+        else if(category == "Vendors") {
+            inventoryItems = await getVendorNames();
+        }
+        else if(category == "CleaningEquipment") {
+            inventoryItems = await getCleanEquipNames();
+        }
+        else {
+            res.status(404).json({error: "Invalid category!"});
+            return;
+        }
 
-        if(ingredientNames) {
-            if (ingredientNames.length > 0) {
-                res.status(200).json(ingredientNames);
+        if(inventoryItems) {
+            if (inventoryItems.length > 0) {
+                res.status(200).json(inventoryItems);
             } else {
                 res.status(404).send('No ingredients found');
             }
@@ -1341,6 +1389,90 @@ app.get('/api/ingredientInfo', async (req, res) => {
         }
     } else {
         res.status(400).json({ error: 'Ingredient name or ID is required' });
+    }
+});
+
+//Get product Info
+app.get('/api/productInfo', async (req, res) => {
+    const { productID } = req.query;
+
+    if (productID) {
+        try {
+            const request = pool.request();
+            let query = '';
+            request.input('ProductID', sql.NVarChar, productID);
+            query = 'SELECT * FROM vwProductInfo WHERE ProductID = @ProductID';
+
+            const result = await request.query(query);
+            const productInfo = result.recordset[0]; // Retrieve the first record
+
+            if (productInfo) {
+                res.status(200).json(productInfo);
+            } else {
+                res.status(404).send('Product not found');
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Error fetching product information');
+        }
+    } else {
+        res.status(400).json({ error: 'product name or ID is required' });
+    }
+});
+
+//Get Vendor Info
+app.get('/api/vendorInfo', async (req, res) => {
+    const { vendorID } = req.query;
+
+    if (vendorID) {
+        try {
+            const request = pool.request();
+            let query = '';
+            request.input('VendorID', sql.NVarChar, vendorID);
+            query = 'SELECT * FROM vwVendorInfo WHERE VendorID = @VendorID';
+
+            const result = await request.query(query);
+            const vendorInfo = result.recordset[0]; // Retrieve the first record
+
+            if (vendorInfo) {
+                res.status(200).json(vendorInfo);
+            } else {
+                res.status(404).send('Vendor not found');
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Error fetching vendor information');
+        }
+    } else {
+        res.status(400).json({ error: 'vendor name or ID is required' });
+    }
+});
+
+//Get Equipment Info
+app.get('/api/equipmentInfo', async (req, res) => {
+    const { equipmentID } = req.query;
+
+    if (equipmentID) {
+        try {
+            const request = pool.request();
+            let query = '';
+            request.input('EquipmentID', sql.NVarChar, equipmentID);
+            query = 'SELECT * FROM vwEquipmentInfo WHERE EquipmentID = @EquipmentID';
+
+            const result = await request.query(query);
+            const equipmentInfo = result.recordset[0]; // Retrieve the first record
+
+            if (equipmentInfo) {
+                res.status(200).json(equipmentInfo);
+            } else {
+                res.status(404).send('Equipment not found');
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Error fetching equipment information');
+        }
+    } else {
+        res.status(400).json({ error: 'equipment ID is required' });
     }
 });
 
