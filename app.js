@@ -159,7 +159,7 @@ const dbConfig = {
     database: process.env.AZURE_SQL_DATABASE,
     options: {
         encrypt: true, // for Azure
-        trustServerCertificate: false // set to true for local development with self-signed certs
+        trustServerCertificate: true // set to true for local development with self-signed certs
     },
     pool: {
         max: 10,
@@ -415,10 +415,10 @@ async function createTables() {
             // Create tblHoursWorkedDay
             await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHoursWorkedDay')
-                CREATE TABLE tblhoursworkedday (
-                    hoursID varchar(50) NOT NULL,
-                    userID varchar(50) DEFAULT NULL,
-                    dayID varchar(50) DEFAULT NULL,
+                CREATE TABLE tblHoursWorkedDay (
+                    hoursID nvarchar(50) NOT NULL,
+                    userID nvarchar(50) DEFAULT NULL,
+                    dayID nvarchar(50) DEFAULT NULL,
                     normalHours decimal(5,2) DEFAULT NULL,
                     overtimeHours decimal(5,2) DEFAULT NULL,
                     holidayHours decimal(5,2) DEFAULT NULL,
@@ -1779,10 +1779,14 @@ app.post('/api/ingredient', async (req, res) => {
 
 //POST to add clock in time, userID, and dayID
 app.post('/api/clockin', async (req, res) => {
-    const { userID } = req.body;
+    const { sessionID } = req.body;
 
-    if (!userID) {
-        return res.status(400).json({ error: 'userID is required' });
+    if (!sessionID) {
+        return res.status(400).json({ error: 'sessionID is required' });
+    }
+    let user;
+    if(!(user = await getUserBySession(sessionID))) {
+        return res.status(401).json({ error: 'Session has expired!' });
     }
 
     try {
@@ -1804,7 +1808,7 @@ app.post('/api/clockin', async (req, res) => {
 
         await request
             .input('logID', sql.NVarChar, uuid.v4())
-            .input('userID', sql.NVarChar, userID)
+            .input('userID', sql.NVarChar, user.UserID)
             .input('dayID', sql.NVarChar, dayID)
             .input('clockInTime', sql.DateTime, currentDateTime)
             .input('isHoliday', sql.Bit, 0) 
@@ -1820,10 +1824,14 @@ app.post('/api/clockin', async (req, res) => {
 
 //POST to add clock out time, userID, and dayID
 app.post('/api/clockout', async (req, res) => {
-    const { userID } = req.body;
+    const { sessionID } = req.body;
 
-    if (!userID) {
-        return res.status(400).json({ error: 'userID is required' });
+    if (!sessionID) {
+        return res.status(400).json({ error: 'sessionID is required' });
+    }
+    let user;
+    if(!(user = await getUserBySession(sessionID))) {
+        return res.status(401).json({ error: 'Session has expired!' });
     }
 
     try {
@@ -1845,7 +1853,7 @@ app.post('/api/clockout', async (req, res) => {
         const dayID = dayResult.recordset[0].dayID;
 
         const result = await request
-            .input('userID', sql.NVarChar, userID)
+            .input('userID', sql.NVarChar, user.UserID)
             .input('dayID', sql.NVarChar, dayID)
             .input('clockOutTime', sql.DateTime, currentDateTime)
             .query(`UPDATE tblLog SET clockOutTime = @clockOutTime 
