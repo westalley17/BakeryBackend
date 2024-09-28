@@ -1831,6 +1831,48 @@ app.post('/api/ingredient', async (req, res) => {
     }
 });
 
+async function getClockStatus(LogID) {
+    try {
+        const request = pool.request();
+
+        const result = await request
+                .input('LogID', sql.NVarChar, LogID)
+                .query('SELECT clockOutTime FROM tblLog WHERE logID = @LogID');
+        console.log(result)
+        if (!result) {
+            return null;
+        }
+        return result.recordset[0];
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+app.get('/api/clock', async (req, res) => {
+    const { sessionID, logID } = req.query;
+    console.log(sessionID, logID)
+
+    if (!sessionID || !logID) {
+        return res.status(400).json({ error: 'sessionID and logID are required' });
+    }
+    let user;
+    if(!(user = await getUserBySession(sessionID))) {
+        return res.status(401).json({ error: 'Session has expired!' });
+    }
+    // get clock status
+    const status = await getClockStatus(logID);
+    // if status is null, then clockOutTime is NULL, aka still clocked in
+    // returns "clockOutTime: null/TIME"
+    console.log(status)
+    if(!status || !status.clockOutTime) {
+        res.status(200).json({status: 1});
+    }
+    else {
+        res.status(200).json({status: 0});
+    }
+    
+})
+
 //POST to add clock in time, userID, and dayID
 app.post('/api/clockin', async (req, res) => {
     const { sessionID } = req.body;
@@ -1859,9 +1901,10 @@ app.post('/api/clockin', async (req, res) => {
         }
 
         const dayID = dayResult.recordset[0].dayID;
+        const logID = uuid.v4();
 
         await request
-            .input('logID', sql.NVarChar, uuid.v4())
+            .input('logID', sql.NVarChar, logID)
             .input('userID', sql.NVarChar, user.UserID)
             .input('dayID', sql.NVarChar, dayID)
             .input('clockInTime', sql.DateTime, currentDateTime)
@@ -1869,7 +1912,7 @@ app.post('/api/clockin', async (req, res) => {
             .query(`INSERT INTO tblLog (logID, userID, dayID, clockInTime, clockOutTime, isHoliday) 
                     VALUES (@logID, @userID, @dayID, @clockInTime, NULL, @isHoliday)`);
 
-        res.status(200).json({ message: 'Clock-in time recorded successfully' });
+        res.status(200).json({ logID: logID, message: 'Clock-in time recorded successfully' });
     } catch (error) {
         console.error('Error recording clock-in time:', error);
         res.status(500).send('Error recording clock-in time');
