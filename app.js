@@ -1052,7 +1052,7 @@ async function getIngredientNames()
 {
     try {
         const request = pool.request();
-        const result = await request.query(`SELECT IngredientID, Name FROM tblIngredient;`);
+        const result = await request.query(`SELECT I.IngredientID, Name, Quantity FROM tblInventory V join tblIngredient I on I.IngredientID = V.IngredientID;`);
         if (!result) {
             return null;
         }
@@ -1387,7 +1387,6 @@ app.get('/api/inventoryItems', async (req, res) => {
     try {
         const { category } = req.query;
         let inventoryItems; 
-        //await getinventoryItems();
         if(category == "Ingredients") {
             inventoryItems = await getIngredientNames();
         }
