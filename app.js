@@ -2182,37 +2182,91 @@ app.post('/api/reOrderIngredient', async (req, res) => {
 
 
 app.post('/api/fulfillDateTime', async (req, res) => {
-
     const { PONumber } = req.body;
 
     if (!PONumber) {
         return res.status(400).json({ error: 'PONumber is required' });
     }
+
     try {
-       
         await poolConnect;
 
-        const request = pool.request();
-        
-        const result = await request
-            .input('PONumber', sql.NVarChar(50),PONumber)
-            .input('FulfillDateTime', sql.DateTime, new Date())
-            .query(`UPDATE tblOrder 
-                    SET FulfillDateTime = @FulfillDateTime 
-                    WHERE PONumber = @PONumber`
-            );
+        const fulfillDate = new Date();
+        let request = pool.request();
 
-        if (result.rowsAffected[0] === 0) {
+        const updateResult = await request
+            .input('PONumber', sql.NVarChar(50), PONumber)
+            .input('FulfillDateTime', sql.DateTime, fulfillDate)
+            .query(`
+                UPDATE tblOrder 
+                SET FulfillDateTime = @FulfillDateTime 
+                WHERE PONumber = @PONumber
+            `);
+
+        if (updateResult.rowsAffected[0] === 0) {
             return res.status(404).json({ error: 'No order found with the given PONumber' });
         }
 
-        return res.status(200).json({ poNumber: PONumber, message: 'Order successfully fulfilled' });
-        
+        request = pool.request();
+        const orderResult = await request
+            .input('PONumber', sql.NVarChar(50), PONumber)
+            .query(`
+                SELECT IngredientID, Quantity, Price 
+                FROM tblOrder 
+                WHERE PONumber = @PONumber
+            `);
+
+        if (orderResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'Order details not found for the given PONumber' });
+        }
+
+        const orderData = orderResult.recordset[0];
+        const ingredientID = orderData.IngredientID;
+        const quantity = orderData.Quantity;
+        const cost = orderData.Price;
+
+        request = pool.request();
+        const nameRequest = await request
+            .input('IngredientID', sql.NVarChar(50), ingredientID)
+            .query(`
+                SELECT Name 
+                FROM tblIngredient 
+                WHERE IngredientID = @IngredientID
+            `);
+
+        if (nameRequest.recordset.length === 0) {
+            return res.status(404).json({ error: 'Ingredient details not found for the given IngredientID' });
+        }
+
+        const ingredientName = nameRequest.recordset[0].Name;
+
+        const entityID = require('uuid').v4();  
+        const expireDateTime = new Date(fulfillDate);
+        expireDateTime.setDate(fulfillDate.getDate() + 7); 
+
+        // Insert new inventory record into tblInventory
+        const insertInventoryRequest = pool.request();
+        await insertInventoryRequest
+            .input('EntityID', sql.UniqueIdentifier, entityID)
+            .input('IngredientID', sql.NVarChar, ingredientID)
+            .input('Quantity', sql.Decimal(10, 2), quantity)
+            .input('UserID', sql.Int, 1) //Just made 1 for now since that's what we've been using
+            .input('Notes', sql.NVarChar(255), `new order of ingredient ${ingredientName}`)
+            .input('Cost', sql.Decimal(18, 2), cost)
+            .input('CreateDateTime', sql.DateTime,  fulfillDate) //using the fulfull date at the start date
+            .input('ExpireDateTime', sql.DateTime, expireDateTime)
+            .input('PONumber', sql.NVarChar(50), PONumber)
+            .query(`
+                INSERT INTO tblInventory (EntityID, IngredientID, Quantity, UserID, Notes, Cost, CreateDateTime, ExpireDateTime, PONumber)
+                VALUES (@EntityID, @IngredientID, @Quantity, @UserID, @Notes, @Cost, @CreateDateTime, @ExpireDateTime, @PONumber)
+            `);
+
+        return res.status(200).json({ poNumber: PONumber, message: 'Order successfully fulfilled and inventory updated' });
+
     } catch (error) {
         console.error('Error processing fulfillment:', error);
         return res.status(500).json({ error: 'An error occurred while processing the request', message: error.message });
     }
-
 });
 
 
