@@ -1106,7 +1106,7 @@ async function getProductNames()
     }
 }
 
-async function getCleanEquipNames()
+async function getEquipNames()
 {
     try {
         const request = pool.request();
@@ -1385,8 +1385,8 @@ app.get('/api/inventoryItems', async (req, res) => {
         else if(category == 'Vendors') {
             inventoryItems = await getVendorNames();
         }
-        else if(category == 'CleaningEquipment') {
-            inventoryItems = await getCleanEquipNames();
+        else if(category == 'Equipment') {
+            inventoryItems = await getEquipNames();
         }
         else {
             res.status(404).json({error: 'Invalid category!'});
@@ -1954,9 +1954,6 @@ app.post('/api/clockout', async (req, res) => {
         res.status(500).send('Error updating clock-out time');
     }
 });
-
-
-
 
 async function mulRecipe(recipeID, num) {
     try {
