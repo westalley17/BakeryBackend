@@ -783,8 +783,6 @@ async function createTables() {
             CREATE TABLE tblVendorIngredient(
                 VendorID nvarchar(50) NOT NULL,
                 IngredientID nvarchar(50) NOT NULL,
-                IngredientQuantity DECIMAL(10,2),
-                IngredientPrice DECIMAL(10,2),
                 PricePerUnit DECIMAL(10,4),
                 PRIMARY KEY (VendorID, IngredientID),
                 FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
@@ -805,6 +803,21 @@ async function createTables() {
                 FulfillDateTime DateTime DEFAULT NULL,
                 FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID),
                 FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
+            )
+        `);
+
+
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblAvailability')
+            CREATE TABLE tblAvailability(
+            	userID NVARCHAR(50) NOT NULL,
+                weekID NVARCHAR(50) NOT NULL,
+                dayID NVARCHAR(50) NOT NULL,
+                shiftOne BIT NOT NULL,
+                shiftTwo BIT NOT NULL,
+                FOREIGN KEY (userID) REFERENCES tblUser(userID) on DELETE CASCADE,
+                FOREIGN KEY (weekID) REFERENCES tblWeek(weekID) on DELETE NO ACTION,
+                FOREIGN KEY (dayID) REFERENCES tblDay(dayID) on DELETE NO ACTION
             )
         `);
 
@@ -2143,6 +2156,95 @@ app.get('/api/vendorNames', async (req, res) => {
         res.status(500).json({ error: 'Error retrieving ingredients', message: error.message });
     }
 });
+
+
+app.post('/api/reOrderIngredient', async (req, res) => {
+    const { ingredientID } = req.body;
+
+    if (!ingredientID) {
+        return res.status(400).json({ error: 'ingredientID is required' });
+    }
+
+    try {
+       
+        await poolConnect;
+
+        const request = pool.request();
+        let result = await request
+            .input('ingredientID', sql.NVarChar, ingredientID)  
+            .query(`
+                SELECT * FROM vwReorder
+                WHERE ingredientID = @ingredientID;
+            `);
+
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ error: 'No data found for the given ingredientID' });
+        }
+
+        let row = result.recordset[0];
+
+        const poNumber = `PO${uuid.v4()}`;
+        
+
+        let insertRequest = pool.request();
+        await insertRequest
+            .input('PONumber', sql.NVarChar(50), poNumber)
+            .input('VendorID', sql.NVarChar, row.vendorID)  
+            .input('IngredientID', sql.NVarChar, row.ingredientID)
+            .input('Quantity', sql.Decimal(10, 2), row.ReorderAmount)
+            .input('Price', sql.Decimal(18, 2), row.result)
+            .input('CreateDateTime', sql.DateTime, new Date())
+            .input('FulfillDateTime', sql.DateTime, null) 
+            .query(`
+                INSERT INTO tblOrder (PONumber, VendorID, IngredientID, Quantity, Price, CreateDateTime, FulfillDateTime)
+                VALUES (@PONumber, @VendorID, @IngredientID, @Quantity, @Price, @CreateDateTime, @FulfillDateTime);
+            `);
+
+        return res.status(201).json({ poNumber: poNumber, message: 'Order successfully created' });
+        
+    } catch (error) {
+        console.error('Error processing reorder:', error);
+        return res.status(500).json({ error: 'An error occurred while processing the request', message: error.message });
+    }
+});
+
+
+app.post('/api/fulfillDateTime', async (req, res) => {
+
+    const { PONumber } = req.body;
+
+    if (!PONumber) {
+        return res.status(400).json({ error: 'PONumber is required' });
+    }
+    try {
+       
+        await poolConnect;
+
+        const request = pool.request();
+        
+        const result = await request
+            .input('PONumber', sql.NVarChar(50),PONumber)
+            .input('FulfillDateTime', sql.DateTime, new Date())
+            .query(`UPDATE tblOrder 
+                    SET FulfillDateTime = @FulfillDateTime 
+                    WHERE PONumber = @PONumber`
+            );
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ error: 'No order found with the given PONumber' });
+        }
+
+        return res.status(200).json({ poNumber: PONumber, message: 'Order successfully fulfilled' });
+        
+    } catch (error) {
+        console.error('Error processing fulfillment:', error);
+        return res.status(500).json({ error: 'An error occurred while processing the request', message: error.message });
+    }
+
+});
+
+
+
 
 // Initialize the database tables and start the server
 createTables()
