@@ -1157,26 +1157,6 @@ async function removeVendor(vendorID) {
     }
 }
 
-//getVendorNames help function
-async function getVendorNames(category)
-{
-    try {
-        //Connecting
-        const request = pool.request();
-
-        // fetch all recipe names associated with a category (i.e., category = cake, result should be "[chocolate, strawberry, vanilla...]")
-        const result = await request.query(`SELECT VendorName FROM tblRecipe`);
-        if (!result) {
-            return null;
-        }
-
-        return result.recordset;
-    } catch (error) {
-        console.error('Database query error:', error);
-        throw error;
-    }
-}
-
 // Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
@@ -1196,10 +1176,6 @@ app.post('/api/users', async (req, res) => {
         }
     }
 });
-
-
-
-
 
 // Availability route (findUser)
 app.get('/api/users', async (req, res) => {
@@ -1400,20 +1376,20 @@ app.get('/api/inventoryItems', async (req, res) => {
     try {
         const { category } = req.query;
         let inventoryItems; 
-        if(category == "Ingredients") {
+        if(category == 'Ingredients') {
             inventoryItems = await getIngredientNames();
         }
-        else if(category == "Products") {
+        else if(category == 'Products') {
             inventoryItems = await getProductNames();
         }
-        else if(category == "Vendors") {
+        else if(category == 'Vendors') {
             inventoryItems = await getVendorNames();
         }
-        else if(category == "CleaningEquipment") {
+        else if(category == 'CleaningEquipment') {
             inventoryItems = await getCleanEquipNames();
         }
         else {
-            res.status(404).json({error: "Invalid category!"});
+            res.status(404).json({error: 'Invalid category!'});
             return;
         }
 
