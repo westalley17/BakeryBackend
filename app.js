@@ -1157,6 +1157,63 @@ async function removeVendor(vendorID) {
     }
 }
 
+async function addVendor(VendorID, VendorName) {
+    try {
+        await poolConnect;
+        const request = pool.request();
+
+        const query = `
+            INSERT INTO tblVendor (VendorID, VendorName)
+            VALUES (@VendorID, @VendorName)
+        `;
+
+        // Input parameters
+        request.input('VendorID', sql.NVarChar, VendorID);
+        request.input('VendorName', sql.NVarChar, VendorName);
+
+        // Execute the query
+        await request.query(query);
+
+        console.log('Vendor added successfully');
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+async function updateVendor(VendorID, VendorName) {
+    try {
+        //Connecting
+        await poolConnect;
+        const request = pool.request();
+
+        //Creating and Utilizing SQL
+        const query = `
+                    UPDATE tblVendor
+                    SET Vendorname = @VendorName
+                    WHERE VendorID = @VendorID
+                    `;
+
+        request.input('VendorID', sql.NVarChar, VendorID);
+        request.input('VendorName', sql.NVarChar, VendorName);
+
+        const result = await request.query(query);
+
+        //Returning
+        if (result.rowsAffected[0] > 0) {
+            console.log('Vendor updated successfully');
+            return true;
+        } else {
+            console.log('Vendor not found');
+            return false;
+        }
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+
 // Registration route with frontend input validation
 app.post('/api/users', async (req, res) => {
     try {
@@ -2093,6 +2150,45 @@ app.post('/api/startBaking', async (req, res) => {
         }
     } else {
         res.status(400).json({ error: 'Recipe name is required' });
+    }
+});
+
+//Post Vendor
+app.post('/api/vendor', async (req, res) => {
+    const { VendorName } = req.body;
+    if (!VendorName) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    const VendorID = uuid.v4(); // Generate a UUID for IngredientID
+
+    try {
+        await addVendor({ VendorID, VendorName});
+        res.status(201).send('Vendor added successfully');
+    }
+    catch (error) {
+        res.status(500).send('Internal server error');
+    }
+});
+
+//Put/Update Vendor
+app.put('/api/vendor', async (req, res) => {
+    const { VendorName } = req.body;
+    const { VendorID } = req.params;
+
+    if (!VendorID || !VendorName) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    try {
+        const vendorUpdated = await updateVendor(VendorID, VendorName);
+        if (vendorUpdated) {
+            res.status(200).send('Vendor updated successfully');
+        } else {
+            res.status(404).send('Vendor not found');
+        }
+    } catch (error) {
+        res.status(500).send('Internal server error');
     }
 });
 
