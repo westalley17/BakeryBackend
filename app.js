@@ -1177,6 +1177,41 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
+async function getEmpBiHours(userID) {
+    try {
+        if(userID)
+        {
+            const request = pool.request();
+            const response = await request.query('SELECT * FROM vwBiWeekHoursSummary');
+            return response.recordset;
+        }
+        else {
+            const request = pool.request();
+            const response = await request.input('UserID', sql.NVarChar, userID)
+                                          .query('SELECT * FROM vwBiWeekHoursSummary WHERE userID = @UserID');
+            return response.recordset[0];
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
+// manager endpoint to retrieve ALL users with hours if no query is provided OR
+// if a userID IS provided, returns a single users data.
+app.get('/api/employeeHours', async (req, res) => {
+    try {
+        const { sessionID } = req.query;
+        const user = await getUserBySession(sessionID);
+        if(!user) {
+            res.status(401).json({error: "Unauthorized access!"});
+        }
+        const response = await getEmpBiHours(user.UserID);
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Availability route (findUser)
 app.get('/api/users', async (req, res) => {
     try {
