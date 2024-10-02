@@ -147,8 +147,7 @@ class Vendor {
 }
 
 class EmpAvailability {
-    constructor(user_ID, week_ID, day_ID, shift_One, shift_two)
-    {
+    constructor(user_ID, week_ID, day_ID, shift_One, shift_two) {
         this.UserID = user_ID;
         this.WeekID = week_ID;
         this.DayID = day_ID;
@@ -1522,10 +1521,14 @@ app.get('/api/ingredientInfo', async (req, res) => {
             const ingredientInfo = result.recordset[0]; // Retrieve the first record
 
             if (ingredientInfo) {
+                if (ingredientInfo.TotalQuantity !== undefined) {
+                    ingredientInfo.TotalQuantity = parseFloat(ingredientInfo.TotalQuantity).toFixed(2);
+                }
                 res.status(200).json(ingredientInfo);
             } else {
                 res.status(404).send('Ingredient not found');
             }
+
         } catch (error) {
             console.error(error);
             res.status(500).send('Error fetching ingredient information');
@@ -1903,7 +1906,7 @@ async function addIngredient(newIngredient) {
     }
 }
 
-async function addAvailability(UserID, WeekID, DayID, ShiftOne, ShiftTwo) {
+async function addAvailability(userID, weekID, dayID, shiftOne, shiftTwo) {
     try {
         await poolConnect;
         const request = pool.request();
@@ -1914,11 +1917,11 @@ async function addAvailability(UserID, WeekID, DayID, ShiftOne, ShiftTwo) {
         `;
 
         // Input parameters
-        request.input('UserID', sql.NVarChar, UserID);
-        request.input('WeekID', sql.NVarChar, WeekID);
-        request.input('DayID', sql.NVarChar, DayID);
-        request.input('ShiftOne', sql.NVarChar, ShiftOne);
-        request.input('ShiftTwo', sql.NVarChar, ShiftTwo);
+        request.input('userID', sql.NVarChar, userID);
+        request.input('weekID', sql.NVarChar, weekID);
+        request.input('dayID', sql.NVarChar, dayID);
+        request.input('shiftOne', sql.BIT, shiftOne);
+        request.input('shiftTwo', sql.BIT, shiftTwo);
 
         // Execute the query
         await request.query(query);
@@ -2259,7 +2262,7 @@ app.get('/api/vendorNames', async (req, res) => {
 app.get('/api/empAvailability', async (req, res) => {
     const { userName, weekID, dayID } = req.query.name;
     if (!userName || !weekID || !dayID) {
-        return res.status(400).json({ error: 'Invalid request', message: 'The employees name is required'});
+        return res.status(400).json({ error: 'Invalid request', message: 'The employees name is required' });
     }
     try {
         const request = pool.request();
@@ -2280,31 +2283,52 @@ app.get('/api/empAvailability', async (req, res) => {
 })
 
 app.post('/api/empAvailability', async (req, res) => {
-    await poolConnect;
-    const { UserID, ShiftOne, ShiftTwo } = req.body;
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const MM = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const formattedDate = '${yyyy}${MM}${dd}';
-
-    const dayQuery = `SELECT DayID FROM tblDay WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
-    const request = pool.request();
-    request.input('formattedDate', sql.NVarChar, formattedDate);
-    const DayID = await request.query(dayQuery);
-
-    const weekQuery = `SELECT WeekID FROM tblWeek WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
-    const WeekID = await request.query(weekQuery);
-
-    if (!UserID || !WeekID || !DayID || !ShiftOne || !ShiftTwo) {
-        return res.status(400).send('Missing required fields');
-    }
-
     try {
-        await addAvailability(UserID, WeekID, DayID, ShiftOne, ShiftTwo);
-        res.status(201).send('Ingredient added successfully');
-    }
-    catch (error) {
+        await poolConnect;
+        const { userID, shiftOne, shiftTwo, dayIndex } = req.body;
+        //day index is used so we dont upload 7 instances of each entry and only one of each 
+        //starts at 0 and goes to 6
+        //Sunday is the start
+
+        if (!userID || shiftOne === undefined || shiftTwo === undefined) {
+            return res.status(400).send('Missing required fields');
+        }
+
+
+        const weekResult = await pool.request().query(`
+            SELECT weekID, dayID FROM tblDay
+            WHERE weekID = (
+                SELECT TOP 1 weekID FROM tblWeek
+                ORDER BY ABS(DATEDIFF(DAY, StartDate, GETDATE()))
+            )
+            ORDER BY Date
+        `);
+
+        if (weekResult.recordset.length === 0) {
+            return res.status(404).send('No week found for todays date');
+        }
+
+        // Loop through the days in the week
+        for (let i = 0; i < weekResult.recordset.length; i++) {
+            const day = weekResult.recordset[i];
+            const weekID = day.weekID;
+            const dayID = day.dayID;
+
+            if (dayIndex !== undefined && dayIndex !== i) {
+                continue;
+            }
+
+            try {
+                await addAvailability(userID, weekID, dayID, shiftOneBit, shiftTwoBit);
+            } catch (error) {
+                console.error('Error adding availability:', error);
+                return res.status(500).send('Internal server error while adding availability');
+            }
+        }
+
+        res.status(201).send('Availability added successfully for specified days');
+    } catch (error) {
+        console.error('Error processing request:', error);
         res.status(500).send('Internal server error');
     }
 });
@@ -2376,7 +2400,7 @@ app.delete('/api/empAvailability', async (req, res) => {
 
         console.log('Entry deleted successfully');
         return res.status(200).json({ message: 'Entry deleted successfully' });
-        
+
     } catch (error) {
         console.error('Error deleting entry:', error);
         return res.status(500).json({ message: 'Error deleting entry', error });
@@ -2524,46 +2548,6 @@ app.post('/api/fulfillDateTime', async (req, res) => {
 });
 
 
-
-app.post('/api/addAvailibility', async (req, res) => {
-    try {
-        await poolConnect;
-
-        const weekResult = await pool.request().query(`
-            SELECT weekID, dayID FROM tblDay
-            WHERE weekID = (
-                SELECT TOP 1 weekID FROM tblWeek
-                ORDER BY ABS(DATEDIFF(DAY, StartDate, GETDATE()))
-            )
-            ORDER BY Date
-        `);
-
-        if (weekResult.recordset.length === 0) {
-            return res.status(404).json({ error: 'No weekID found for today\'s date' });
-        }
-
-        const weekID = weekResult.recordset[0].weekID;
-        const userID = '1'; 
-        for (const day of weekResult.recordset) {
-            const dayID = day.dayID;
-            
-            const request = pool.request();
-            await request
-                .input('userID', sql.NVarChar, userID)
-                .input('weekID', sql.NVarChar, weekID)
-                .input('dayID', sql.NVarChar, dayID)
-                .query(`
-                    INSERT INTO tblAvailability (userID, weekID, dayID, shiftOne, shiftTwo) 
-                    VALUES (@userID, @weekID, @dayID, @shiftOne, @shiftTwo)
-                `);
-        }   
-
-        res.status(200).json({ message: 'Availability recorded successfully for all days' });
-    } catch (error) {
-        console.error('Error recording availability:', error);
-        res.status(500).send('Error recording availability');
-    }
-});
 
 
 // Initialize the database tables and start the server
