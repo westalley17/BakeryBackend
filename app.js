@@ -609,6 +609,7 @@ async function createTables() {
                     PONumber NVARCHAR(50),
                     FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID) ON DELETE CASCADE,
                     FOREIGN KEY (UserID) REFERENCES tblUser(UserID)
+                    FOREIGN KEY (PONumber) REFERENCES tblOrder(PONumber) ON DELETE CASCADE
                 )
             `);
 
