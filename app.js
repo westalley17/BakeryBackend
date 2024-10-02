@@ -157,6 +157,14 @@ class EmpAvailability {
     }
 }
 
+class Days {
+    constructor(shift_One, shift_Two, day_ID){
+        this.ShiftOne = shift_One;
+        this.ShiftTwo = shift_Two;
+        this.DayID = day_ID;
+    }
+}
+
 // Required modules
 const express = require('express');
 const session = require('express-session');
@@ -2281,7 +2289,8 @@ app.get('/api/empAvailability', async (req, res) => {
 
 app.post('/api/empAvailability', async (req, res) => {
     await poolConnect;
-    const { UserID, ShiftOne, ShiftTwo } = req.body;
+    const { SessionID, ShiftOne, ShiftTwo } = req.body;
+    const User = getUserBySession(SessionID);
     const today = new Date();
     const yyyy = today.getFullYear();
     const MM = String(today.getMonth() + 1).padStart(2, '0');
@@ -2310,32 +2319,77 @@ app.post('/api/empAvailability', async (req, res) => {
 });
 
 app.put('/api/empAvailability', async (req, res) => {
-    try {
-        await poolConnect; // Ensure the database connection is established
-        const request = pool.request();
+    await poolConnect; // Ensure the database connection is established
+    const request = pool.request();
 
-        // Extract parameters from the request body
-        const { user_ID, week_ID, day_ID, shift_One, shift_Two } = req.body;
+    try {
+        const { sessionID, sShift_One, sShift_Two, mShift_One, mShift_Two, 
+            tShift_One, tShift_Two, wShift_One, wShift_Two, thShift_One, 
+            thShift_Two, fShift_One, fShift_Two, saShift_One, saShift_Two } = req.body;
+        const user = getUserBySession(sessionID);
+
+        //Checks if it is valid
+        if(!user) {
+            res.status(401).send('User Unauthorized');
+        }
+        const userID = user.UserID;
 
         // Input validations
-        if (!user_ID || !week_ID || !day_ID || shift_One === undefined || shift_Two === undefined) {
+        if (!userID || !sShift_One || !sShift_Two || !mShift_One || !mShift_Two ||
+            !tShift_One || !tShift_Two || !wShift_One || !wShift_Two || !thShift_One ||
+                !thShift_Two || !fShift_One || !fShift_Twos || !saShift_One || !saShift_Two || !formattedDate) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // Set the input parameters for the query
-        request.input('user_ID', sql.NVarChar, user_ID);
-        request.input('week_ID', sql.NVarChar, week_ID);
-        request.input('day_ID', sql.NVarChar, day_ID);
-        request.input('shift_One', sql.Bit, shift_One);
-        request.input('shift_Two', sql.Bit, shift_Two);
+        //Gets the dayID and WeekID
+        const Sunday = new Date('2024-09-29T00:00:00');
+        const yyyy = Sunday.getFullYear();
+        const MM = String(Sunday.getMonth() + 1).padStart(2, '0');
+        const dd = String(Sunday.getDate()).padStart(2, '0');
+        const formattedDate = '${yyyy}${MM}${dd}';
 
-        // Execute the update query
-        const result = await request.query(`
-            UPDATE EmpAvailability
-            SET shift_One = @shift_One, shift_Two = @shift_Two
-            WHERE user_ID = @user_ID AND week_ID = @week_ID AND day_ID = @day_ID
-        `);
+        const request = pool.request();
+        request.input('formattedDate', sql.NVarChar, formattedDate);
+        const weekQuery = `SELECT WeekID FROM tblWeek WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
+        const WeekID = await request.query(weekQuery);
 
+        //Sets the day booleans
+        var dayArray = new Array(7);
+        dayArray[0].ShiftOne = sShift_One;
+        dayArray[0].ShiftTwo = sShift_Two;
+        dayArray[1].ShiftOne = mShift_One;
+        dayArray[1].ShiftTwo = mShift_Two;
+        dayArray[2].ShiftOne = tShift_One;
+        dayArray[2].ShiftTwo = tShift_Two;
+        dayArray[3].ShiftOne = wShift_One;
+        dayArray[3].ShiftTwo = wShift_Two;
+        dayArray[4].ShiftOne = thShift_One;
+        dayArray[4].ShiftTwo = thShift_Two;
+        dayArray[5].ShiftOne = fShift_One;
+        dayArray[5].ShiftTwo = fShift_Two;
+        dayArray[6].ShiftOne = saShift_One;
+        dayArray[6].ShiftTwo = saShift_Two;
+
+        //Gets the dayIDs and sets them to the array
+        for(let i = 0; i < 7; i++) {
+            const dayQuery = `SELECT DayID FROM tblDay WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
+            const dayID = await request.query(dayQuery);
+            dayArray[i].DayID = dayID
+            Sunday.setDate(Sunday.getDate()+1);
+        }
+
+        //Updates the Table
+        for(let i = 0; i < 7; i++) {
+            request.input('dayID', sql.NVarChar, dayArray[i].DayID);
+            request.input('shiftOne', sql.Bit, dayArray[i].ShiftOne);
+            request.input('shiftTwo', sql.Bit, dayArray[i].ShiftTwo);
+            const query = `UPDATE [dbo].[tblAvailability] 
+                        SET shiftOne = , shiftTwo = 0
+                        WHERE userID = @userID AND dayID = @DayID AND weekID = @WeekID`;
+            await request.query(query);
+        }
+
+        //Error Handling
         if (result.rowsAffected[0] === 0) {
             console.log('No entry found to update');
             return res.status(404).json({ message: 'No entry found to update' });
