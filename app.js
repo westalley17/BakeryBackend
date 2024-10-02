@@ -1198,7 +1198,7 @@ async function getEmpBiHours(userID) {
 
 // manager endpoint to retrieve ALL users with hours if no query is provided OR
 // if a userID IS provided, returns a single users data.
-app.get('/api/employeeHours', async (req, res) => {
+app.get('/api/manager/employeeHours', async (req, res) => {
     try {
         const { sessionID } = req.query;
         //const user = await getUserBySession(sessionID);
@@ -1206,6 +1206,22 @@ app.get('/api/employeeHours', async (req, res) => {
             res.status(401).json({error: "Unauthorized access!"});
         }
         const response = await getEmpBiHours();
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// manager endpoint to retrieve ALL users with hours if no query is provided OR
+// if a userID IS provided, returns a single users data.
+app.get('/api/employee/employeeHours', async (req, res) => {
+    try {
+        const { sessionID } = req.query;
+        const user = await getUserBySession(sessionID);
+        if(!user) {
+            res.status(401).json({error: "Unauthorized access!"});
+        }
+        const response = await getEmpBiHours(user.UserID);
         res.status(200).json(response);
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
