@@ -1521,10 +1521,14 @@ app.get('/api/ingredientInfo', async (req, res) => {
             const ingredientInfo = result.recordset[0]; // Retrieve the first record
 
             if (ingredientInfo) {
+                if (ingredientInfo.TotalQuantity !== undefined) {
+                    ingredientInfo.TotalQuantity = parseFloat(ingredientInfo.TotalQuantity).toFixed(2);
+                }
                 res.status(200).json(ingredientInfo);
             } else {
                 res.status(404).send('Ingredient not found');
             }
+
         } catch (error) {
             console.error(error);
             res.status(500).send('Error fetching ingredient information');
