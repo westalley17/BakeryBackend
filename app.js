@@ -947,6 +947,34 @@ async function removeIngredient(ingredientID)
     }
 }
 
+async function updateIngredient(ingredientName, newIngredientName, otherAttribute)
+{
+    try {
+        const request = pool.request();
+    
+        request.input('IngredientName', sql.NVarChar, ingredientName);
+        request.input('NewIngredientName', sql.NVarChar, newIngredientName);
+        request.input('OtherAttribute', sql.NVarChar, otherAttribute);
+
+        const query = `UPDATE tblIngredient
+                        SET Name = @NewIngredientName, OtherAttribute = @OtherAttribute
+                        WHERE Name = @IngredientName
+                        `;
+        
+        const result = await request.query(query);
+
+        if (result.rowsAffected[0] > 0) {
+            console.log('Ingredient updated successfully');
+            return true;
+        } else {
+            console.log('Ingredient not found');
+            return false;
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
 // Get user by session (used to automatically sign someone in based on SessionStorage for the web frontend, not sure about mobile just yet)
 async function getUserBySession(sessionID) {
     try {
@@ -1421,6 +1449,27 @@ app.delete('/api/ingredient', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });     
+
+app.put('/api/ingredient', async (req, res) => {
+    const ingredientName = req.query.name;
+    const { newIngredientName, otherAttribute } = req.body;
+
+    if (!ingredientName || !newIngredientName) {
+        return res.status(400).json({ error: 'Invalid Request', message: 'Both original ingredient name and new ingredient names are required.'});
+    }
+
+    try {
+        const updated = await updateIngredient(ingredientName, newIngredient, otherAttribute);
+        
+        if (updated) {
+            res.status(200).json('Ingredient Successfully Updated');
+        } else {
+            res.status(404).json('Ingredient not found');
+        }
+    } catch (error) {
+        res.status(500).json('Error updating ingredient');
+    }
+});
 
 // Retrieves list of InventoryItems (IngredientNames, VendorNames, etc)
 app.get('/api/inventoryItems', async (req, res) => {
