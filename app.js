@@ -1179,7 +1179,7 @@ app.post('/api/users', async (req, res) => {
 
 async function getEmpBiHours(userID) {
     try {
-        if(userID)
+        if(!userID)
         {
             const request = pool.request();
             const response = await request.query('SELECT * FROM vwBiWeekHoursSummary');
@@ -1201,11 +1201,11 @@ async function getEmpBiHours(userID) {
 app.get('/api/employeeHours', async (req, res) => {
     try {
         const { sessionID } = req.query;
-        const user = await getUserBySession(sessionID);
-        if(!user) {
+        //const user = await getUserBySession(sessionID);
+        if(!sessionID) {
             res.status(401).json({error: "Unauthorized access!"});
         }
-        const response = await getEmpBiHours(user.UserID);
+        const response = await getEmpBiHours();
         res.status(200).json(response);
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
