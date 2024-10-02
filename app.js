@@ -125,16 +125,14 @@ class Recipe {
 }
 
 class EmpTimesheet {
-    constructor(type_id, user_id)
-    {
+    constructor(type_id, user_id) {
         this.TypeID = type_id;
         this.UserID = user_id;
     }
 }
 
 class Vendor {
-    constructor(vendor_id, vendor_name, address_id, phone_number_id, email_id, notes, ingredient_id, ingredient_quantity, ingredient_price, price_per_unit)
-    {
+    constructor(vendor_id, vendor_name, address_id, phone_number_id, email_id, notes, ingredient_id, ingredient_quantity, ingredient_price, price_per_unit) {
         this.VendorID = vendor_id;
         this.VendorName = vendor_name;
         this.AddressID = address_id;
@@ -206,7 +204,7 @@ app.use(session({
     secret: process.env.AZURE_SQL_SESSION_SECRET, // Use environment variable
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
         secure: process.env.AZURE_SQL_NODE_ENV === 'production', // Ensure secure in production
         httpOnly: true,
         sameSite: 'lax'
@@ -219,8 +217,8 @@ async function createTables() {
         await poolConnect; // Ensure the pool is connected
         const request = pool.request();
 
-	    	//Create tblUser
-            await request.query(`
+        //Create tblUser
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUser')
                 CREATE TABLE tblUser (
                     UserID NVARCHAR(50) PRIMARY KEY,
@@ -233,8 +231,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblAddressType
-            await request.query(`
+        //Create tblAddressType
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblAddressType')
                 CREATE TABLE tblAddressType (
                     TypeID NVARCHAR(50) PRIMARY KEY,
@@ -243,8 +241,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblEmailType
-            await request.query(`
+        //Create tblEmailType
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEmailType')
                 CREATE TABLE tblEmailType (
                     TypeID NVARCHAR(50) PRIMARY KEY,
@@ -253,8 +251,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblPayType
-            await request.query(`
+        //Create tblPayType
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPayType')
                 CREATE TABLE tblPayType (
                     TypeID NVARCHAR(50) PRIMARY KEY,
@@ -262,8 +260,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblPhoneNumberTypes
-            await request.query(`
+        //Create tblPhoneNumberTypes
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPhoneNumberTypes')
                 CREATE TABLE tblPhoneNumberTypes (
                     TypeID NVARCHAR(50) PRIMARY KEY,
@@ -272,8 +270,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblRaceType
-            await request.query(`
+        //Create tblRaceType
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRaceType')
                 CREATE TABLE tblRaceType (
                     TypeID NVARCHAR(50) PRIMARY KEY,
@@ -281,8 +279,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblState
-            await request.query(`
+        //Create tblState
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblState')
                 CREATE TABLE tblState (
                     StateID NVARCHAR(50) PRIMARY KEY,
@@ -290,8 +288,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblBiWeek
-            await request.query(`
+        //Create tblBiWeek
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblBiWeek')
                 CREATE TABLE tblBiWeek (
                     BiWeekID NVARCHAR(50) PRIMARY KEY,
@@ -300,8 +298,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblWeek
-            await request.query(`
+        //Create tblWeek
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblWeek')
                 CREATE TABLE tblWeek (
                     WeekID NVARCHAR(50) PRIMARY KEY,
@@ -312,8 +310,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblTimeType
-            await request.query(`
+        //Create tblTimeType
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblTimeType')
                 CREATE TABLE tblTimeType (
                     TypeID NVARCHAR(50) PRIMARY KEY,
@@ -321,8 +319,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblAge
-            await request.query(`
+        //Create tblAge
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblAge')
                 CREATE TABLE tblAge (
                     AgeID NVARCHAR(50) PRIMARY KEY,
@@ -333,8 +331,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblDOB
-            await request.query(`
+        //Create tblDOB
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblDOB')
                 CREATE TABLE tblDOB (
                     DobID NVARCHAR(50) PRIMARY KEY,
@@ -345,8 +343,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblEmail
-            await request.query(`
+        //Create tblEmail
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEmail')
                 CREATE TABLE tblEmail (
                     EmailID NVARCHAR(50) PRIMARY KEY,
@@ -363,8 +361,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblEmployeeTime
-            await request.query(`
+        //Create tblEmployeeTime
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEmployeeTime')
                 CREATE TABLE tblEmployeeTime (
                     EmpTypeID NVARCHAR(50) PRIMARY KEY,
@@ -375,8 +373,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblGender
-            await request.query(`
+        //Create tblGender
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblGender')
                 CREATE TABLE tblGender (
                     GenderID NVARCHAR(50) PRIMARY KEY,
@@ -387,8 +385,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblHireDate
-            await request.query(`
+        //Create tblHireDate
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHireDate')
                 CREATE TABLE tblHireDate (
                     HireID NVARCHAR(50) PRIMARY KEY,
@@ -399,8 +397,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblDay
-            await request.query(`
+        //Create tblDay
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblDay')
                 CREATE TABLE tblDay (
                     DayID NVARCHAR(50) PRIMARY KEY,
@@ -411,8 +409,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblHourly
-            await request.query(`
+        //Create tblHourly
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourly')
                 CREATE TABLE tblHourly (
                     TypeID NVARCHAR(50),
@@ -421,8 +419,8 @@ async function createTables() {
                 )
             `);
 
-            //Create tblHourlyHoliday
-            await request.query(`
+        //Create tblHourlyHoliday
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourlyHoliday')
                 CREATE TABLE tblHourlyHoliday (
                     TypeID NVARCHAR(50),
@@ -430,9 +428,9 @@ async function createTables() {
                     FOREIGN KEY (TypeID) REFERENCES tblPayType(TypeID) ON DELETE CASCADE
                 )
             `);
-	
-	        // Create tblHourlyOvertime
-            await request.query(`
+
+        // Create tblHourlyOvertime
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourlyOvertime')
                 CREATE TABLE tblHourlyOvertime (
                     TypeID NVARCHAR(50),
@@ -441,8 +439,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblHoursWorkedDay
-            await request.query(`
+        // Create tblHoursWorkedDay
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHoursWorkedDay')
                 CREATE TABLE tblHoursWorkedDay (
                     hoursID nvarchar(50) NOT NULL,
@@ -457,8 +455,8 @@ async function createTables() {
                 ) 
             `);
 
-            // Create tblPay
-            await request.query(`
+        // Create tblPay
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPay')
                 CREATE TABLE tblPay (
                     PayID NVARCHAR(50) PRIMARY KEY,
@@ -471,8 +469,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblPhoneNumber
-            await request.query(`
+        // Create tblPhoneNumber
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblPhoneNumber')
                 CREATE TABLE tblPhoneNumber (
                     PhoneNumberID NVARCHAR(50) PRIMARY KEY,
@@ -490,8 +488,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblRace
-            await request.query(`
+        // Create tblRace
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRace')
                 CREATE TABLE tblRace (
                     RaceID NVARCHAR(50) PRIMARY KEY,
@@ -502,8 +500,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblSalary
-            await request.query(`
+        // Create tblSalary
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSalary')
                 CREATE TABLE tblSalary (
                     TypeID NVARCHAR(50),
@@ -512,8 +510,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblSession
-            await request.query(`
+        // Create tblSession
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSession')
                 CREATE TABLE tblSession (
                     SessionID NVARCHAR(50) PRIMARY KEY,
@@ -523,8 +521,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblShift
-            await request.query(`
+        // Create tblShift
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblShift')
                 CREATE TABLE tblShift (
                     ShiftID NVARCHAR(50) PRIMARY KEY,
@@ -535,8 +533,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblSSN
-            await request.query(`
+        // Create tblSSN
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSSN')
                 CREATE TABLE tblSSN (
                     SSNID NVARCHAR(50) PRIMARY KEY,
@@ -548,8 +546,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblUserAddress
-            await request.query(`
+        // Create tblUserAddress
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblUserAddress')
                 CREATE TABLE tblUserAddress (
                     AddressID NVARCHAR(50) PRIMARY KEY,
@@ -567,8 +565,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblBiWeekDayConversion
-            await request.query(`
+        // Create tblBiWeekDayConversion
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblBiWeekDayConversion')
                 CREATE TABLE tblBiWeekDayConversion (
                     DayID NVARCHAR(50) PRIMARY KEY,
@@ -578,8 +576,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblIngredientCategory
-            await request.query(`
+        // Create tblIngredientCategory
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredientCategory')
                 CREATE TABLE tblIngredientCategory (
                     IngredientCategoryID NVARCHAR(50) PRIMARY KEY,
@@ -588,8 +586,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblIngredient
-            await request.query(`
+        // Create tblIngredient
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblIngredient')
                 CREATE TABLE tblIngredient (
                     IngredientID NVARCHAR(50) PRIMARY KEY,
@@ -605,8 +603,8 @@ async function createTables() {
                 )
             `);
 
-            // Create tblInventory
-            await request.query(`
+        // Create tblInventory
+        await request.query(`
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblInventory')
                 CREATE TABLE tblInventory (
                     EntityID NVARCHAR(50) PRIMARY KEY,
@@ -619,14 +617,14 @@ async function createTables() {
                     ExpireDateTime DATETIME NOT NULL,
                     PONumber NVARCHAR(50),
                     FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID) ON DELETE CASCADE,
-                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID)
+                    FOREIGN KEY (UserID) REFERENCES tblUser(UserID),
                     FOREIGN KEY (PONumber) REFERENCES tblOrder(PONumber) ON DELETE CASCADE
                 )
             `);
 
 
-		// Create tblProductCategory
-		await request.query(`
+        // Create tblProductCategory
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProductCategory')
 			CREATE TABLE tblProductCategory (
 				ProductCategoryID NVARCHAR(50) PRIMARY KEY,
@@ -635,8 +633,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblProduct
-		await request.query(`
+        // Create tblProduct
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblProduct')
 			CREATE TABLE tblProduct (
 				ProductID NVARCHAR(50) PRIMARY KEY,
@@ -647,8 +645,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblStock
-		await request.query(`
+        // Create tblStock
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStock')
 			CREATE TABLE tblStock (
 				StockID NVARCHAR(50) PRIMARY KEY,
@@ -660,8 +658,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblRecipe
-		await request.query(`
+        // Create tblRecipe
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipe')
 			CREATE TABLE tblRecipe (
 				RecipeID NVARCHAR(50) PRIMARY KEY,
@@ -675,8 +673,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblStorefront
-		await request.query(`
+        // Create tblStorefront
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblStorefront')
 			CREATE TABLE tblStorefront (
 				StorefrontID NVARCHAR(50) PRIMARY KEY,
@@ -686,8 +684,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblEquipment
-		await request.query(`
+        // Create tblEquipment
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblEquipment')
 			CREATE TABLE tblEquipment (
 				EquipmentID NVARCHAR(50) PRIMARY KEY,
@@ -697,8 +695,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblKitchenEquipment
-		await request.query(`
+        // Create tblKitchenEquipment
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblKitchenEquipment')
 			CREATE TABLE tblKitchenEquipment (
 				KitchenEquipmentID NVARCHAR(50) PRIMARY KEY,
@@ -711,8 +709,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblRecipeIngredient
-		await request.query(`
+        // Create tblRecipeIngredient
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeIngredient')
 			CREATE TABLE tblRecipeIngredient (
 				RecipeID NVARCHAR(50) NOT NULL,
@@ -724,8 +722,8 @@ async function createTables() {
 			)
 		`);
 
-		// Create tblRecipeEquipment
-		await request.query(`
+        // Create tblRecipeEquipment
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeEquipment')
 			CREATE TABLE tblRecipeEquipment (
 				RecipeID NVARCHAR(50) NOT NULL,
@@ -736,9 +734,9 @@ async function createTables() {
 				FOREIGN KEY (EquipmentID) REFERENCES tblEquipment(EquipmentID)
 			)
 		`);
-		
-		// Create tblRecipeInstruction
-		await request.query(`
+
+        // Create tblRecipeInstruction
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblRecipeInstruction')
 			CREATE TABLE tblRecipeInstruction (
 				RecipeID NVARCHAR(50) NOT NULL,
@@ -750,7 +748,7 @@ async function createTables() {
 		`);
 
         // Create tblLog
-		await request.query(`
+        await request.query(`
 			IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblLog')
 			CREATE TABLE tblLog (
                 logID NVARCHAR(50) PRIMARY KEY,  
@@ -801,7 +799,7 @@ async function createTables() {
                 FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
             )
         `);
-        
+
         // Create tblOrder
         await request.query(`
             IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblOrder')
@@ -834,7 +832,7 @@ async function createTables() {
         `);
 
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
-        
+
 
     } catch (error) {
         console.log(error)
@@ -860,7 +858,7 @@ async function findUser(username) {
         console.log(username)
         const request = pool.request();
         const response = await request.input('Username', sql.NVarChar, username)
-                     .query('SELECT * FROM tblUser WHERE Username = @Username');
+            .query('SELECT * FROM tblUser WHERE Username = @Username');
         return response.recordset[0]; // will be null or something now :)
     } catch (error) {
         console.log(error)
@@ -878,12 +876,12 @@ async function addUser(newUser) {
         const hashedPassword = await hashPassword(newUser.Password);
         const request = pool.request();
         await request.input('UserID', sql.NVarChar, newUser.UserID)
-                     .input('FirstName', sql.NVarChar, newUser.FirstName)
-                     .input('LastName', sql.NVarChar, newUser.LastName)
-                     .input('Username', sql.NVarChar, newUser.Username)
-                     .input('Password', sql.NVarChar, hashedPassword)
-                     .input('UserType', sql.Bit, newUser.UserType)
-                     .query('INSERT INTO tblUser (UserID, FirstName, LastName, Username, Password, UserType) VALUES (@UserID, @FirstName, @LastName, @Username, @Password, @UserType)');
+            .input('FirstName', sql.NVarChar, newUser.FirstName)
+            .input('LastName', sql.NVarChar, newUser.LastName)
+            .input('Username', sql.NVarChar, newUser.Username)
+            .input('Password', sql.NVarChar, hashedPassword)
+            .input('UserType', sql.Bit, newUser.UserType)
+            .query('INSERT INTO tblUser (UserID, FirstName, LastName, Username, Password, UserType) VALUES (@UserID, @FirstName, @LastName, @Username, @Password, @UserType)');
     } catch (error) {
         console.log(error)
         throw error;
@@ -895,7 +893,7 @@ async function authenticateUser(username, password) {
     try {
         const request = pool.request();
         const result = await request.input('Username', sql.NVarChar, username)
-                                   .query('SELECT * FROM tblUser WHERE Username = @Username');
+            .query('SELECT * FROM tblUser WHERE Username = @Username');
         if (result.recordset.length === 0) {
             return null;
         }
@@ -917,9 +915,9 @@ async function addSession(SessionID, UserID, UserType) {
     try {
         const request = pool.request();
         await request.input('SessionID', sql.NVarChar, SessionID)
-                     .input('UserID', sql.NVarChar, UserID)
-                     .input('UserType', sql.Bit, UserType)
-                     .query('INSERT INTO tblSession (SessionID, UserID, UserType) VALUES (@SessionID, @UserID, @UserType)');
+            .input('UserID', sql.NVarChar, UserID)
+            .input('UserType', sql.Bit, UserType)
+            .query('INSERT INTO tblSession (SessionID, UserID, UserType) VALUES (@SessionID, @UserID, @UserType)');
     } catch (error) {
         throw error;
     }
@@ -930,7 +928,7 @@ async function removeSession(SessionID) {
     try {
         const request = pool.request();
         await request.input('SessionID', sql.NVarChar, SessionID)
-                     .query('DELETE FROM tblSession WHERE SessionID = @SessionID');
+            .query('DELETE FROM tblSession WHERE SessionID = @SessionID');
     } catch (error) {
         throw error;
     }
@@ -941,29 +939,27 @@ async function removeRecipe(recipeID) {
     try {
         const request = pool.request();
         await request.input('RecipeID', sql.NVarChar, recipeID)
-                        .query('DELETE FROM tblRecipe WHERE RecipeID = @RecipeID');
+            .query('DELETE FROM tblRecipe WHERE RecipeID = @RecipeID');
     } catch (error) {
         throw error;
     }
 }
 
 //Removes an Ingredient
-async function removeIngredient(ingredientID)
-{
+async function removeIngredient(ingredientID) {
     try {
         const request = pool.request();
         await request.input('IngredientID', sql.NVarChar, ingredientID)
-                        .query('DELETE FROM tblIngredient WHERE IngredientID = @IngredientID');
+            .query('DELETE FROM tblIngredient WHERE IngredientID = @IngredientID');
     } catch (error) {
         throw error;
     }
 }
 
-async function updateIngredient(ingredientName, newIngredientName, otherAttribute)
-{
+async function updateIngredient(ingredientName, newIngredientName, otherAttribute) {
     try {
         const request = pool.request();
-    
+
         request.input('IngredientName', sql.NVarChar, ingredientName);
         request.input('NewIngredientName', sql.NVarChar, newIngredientName);
         request.input('OtherAttribute', sql.NVarChar, otherAttribute);
@@ -972,7 +968,7 @@ async function updateIngredient(ingredientName, newIngredientName, otherAttribut
                         SET Name = @NewIngredientName, OtherAttribute = @OtherAttribute
                         WHERE Name = @IngredientName
                         `;
-        
+
         const result = await request.query(query);
 
         if (result.rowsAffected[0] > 0) {
@@ -992,7 +988,7 @@ async function getUserBySession(sessionID) {
     try {
         const request = pool.request();
         const result = await request.input('SessionID', sql.NVarChar, sessionID)
-                                   .query('SELECT S.SessionID, S.UserID, S.UserType, U.FirstName, U.LastName FROM tblSession S INNER JOIN tblUser U ON S.UserID = U.UserID WHERE S.SessionID = @SessionID');
+            .query('SELECT S.SessionID, S.UserID, S.UserType, U.FirstName, U.LastName FROM tblSession S INNER JOIN tblUser U ON S.UserID = U.UserID WHERE S.SessionID = @SessionID');
         if (result.recordset.length === 0) {
             return null;
         }
@@ -1008,7 +1004,7 @@ async function authenticateManager(username, password) {
     try {
         const request = pool.request();
         const result = await request.input('Username', sql.NVarChar, username)
-                                   .query('SELECT * FROM tblUser WHERE Username = @Username AND UserType = 1');
+            .query('SELECT * FROM tblUser WHERE Username = @Username AND UserType = 1');
         if (result.recordset.length === 0) {
             return null; // user is not a manager
         }
@@ -1034,13 +1030,13 @@ async function getRecipeFromDb(recipeID) {
 
         //Query to fetch
         const result = await request.input('RecipeID', sql.NVarChar, recipeID)
-                                    .query(`SELECT * FROM tblRecipe WHERE RecipeID = @RecipeID`);
+            .query(`SELECT * FROM tblRecipe WHERE RecipeID = @RecipeID`);
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
             return null; //Doesn't exist
         }
-        
+
         //Returns the whole object
         const recipe = result.recordset[0];
         return new Recipe(recipe.RecipeID, recipe.Name, recipe.Notes, recipe.YieldAmount, recipe.ProductID, recipe.PrepTime, recipe.BakeTime);
@@ -1060,13 +1056,13 @@ async function getIngredientFromDb(ingredientName) {
 
         //Query to fetch
         const result = await request.input('Ingredient', sql.NVarChar, ingredientName)
-                                    .query(`SELECT * FROM tblIngredient WHERE Name = @Ingredient`);
+            .query(`SELECT * FROM tblIngredient WHERE Name = @Ingredient`);
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
             return null; //Doesn't exist
         }
-        
+
         //Returns the whole object
         const ingredient = result.recordset[0];
         return new Ingredient(ingredient.IngredientID, ingredient.Description, ingredient.Category, ingredient.Measurement, ingredient.MaxAmount, ingredient.ReorderAmount, ingredient.MinAmount);
@@ -1078,15 +1074,14 @@ async function getIngredientFromDb(ingredientName) {
 }
 
 // probably going to need this one to be able to pull the names depending on the category its in.
-async function getRecipeNames(category)
-{
+async function getRecipeNames(category) {
     try {
         //Connecting
         const request = pool.request();
 
         // fetch all recipe names associated with a category (i.e., category = cake, result should be "[chocolate, strawberry, vanilla...]")
         const result = await request.input('Category', sql.NVarChar, category)
-                                    .query(`SELECT r.RecipeID, r.Name 
+            .query(`SELECT r.RecipeID, r.Name 
                                             FROM tblRecipe r JOIN tblProduct p ON r.ProductID = p.ProductID JOIN tblProductCategory pc 
                                             ON p.ProductCategoryID = pc.ProductCategoryID WHERE pc.Name = @Category;`);
 
@@ -1101,8 +1096,7 @@ async function getRecipeNames(category)
     }
 }
 
-async function getIngredientNames()
-{
+async function getIngredientNames() {
     try {
         const request = pool.request();
         const result = await request.query(`SELECT I.IngredientID, Name, Quantity FROM tblInventory V join tblIngredient I on I.IngredientID = V.IngredientID;`);
@@ -1116,8 +1110,7 @@ async function getIngredientNames()
     }
 }
 
-async function getVendorNames()
-{
+async function getVendorNames() {
     try {
         const request = pool.request();
         const result = await request.query(`SELECT VendorID, VendorName FROM tblVendor;`);
@@ -1131,8 +1124,7 @@ async function getVendorNames()
     }
 }
 
-async function getProductNames()
-{
+async function getProductNames() {
     try {
         const request = pool.request();
         const result = await request.query(`SELECT ProductID, Name FROM tblProduct;`);
@@ -1146,8 +1138,7 @@ async function getProductNames()
     }
 }
 
-async function getEquipNames()
-{
+async function getEquipNames() {
     try {
         const request = pool.request();
         const result = await request.query(`SELECT EquipmentID, Name FROM tblEquipment;`);
@@ -1161,21 +1152,20 @@ async function getEquipNames()
     }
 }
 
-async function getTimesheetFromDb(typeID)
-{
+async function getTimesheetFromDb(typeID) {
     try {
         //Connecting
         const request = pool.request();
 
         //Query to fetch
         const result = await request.input('TypeID', sql.NVarChar, typeID)
-                                    .query(`SELECT * FROM tblEmployeeTime WHERE TypeID = @TypeID`);
+            .query(`SELECT * FROM tblEmployeeTime WHERE TypeID = @TypeID`);
 
         //Checks to make sure it exists
         if (result.recordset.length == 0) {
             return null; //Doesn't exist
         }
-        
+
         //Returns the whole object
         const timesheet = result.recordset[0];
         return new EmpTimesheet(timesheet.TypeID, timesheet.UserID);
@@ -1191,7 +1181,7 @@ async function removeVendor(vendorID) {
     try {
         const request = pool.request();
         await request.input('VendorID', sql.NVarChar, vendorID)
-                        .query('DELETE FROM tblVendor WHERE VendorID = @VendorID');
+            .query('DELETE FROM tblVendor WHERE VendorID = @VendorID');
     } catch (error) {
         throw error;
     }
@@ -1219,8 +1209,7 @@ app.post('/api/users', async (req, res) => {
 
 async function getEmpBiHours(userID) {
     try {
-        if(!userID)
-        {
+        if (!userID) {
             const request = pool.request();
             const response = await request.query('SELECT * FROM vwBiWeekHoursSummary');
             return response.recordset;
@@ -1228,7 +1217,7 @@ async function getEmpBiHours(userID) {
         else {
             const request = pool.request();
             const response = await request.input('UserID', sql.NVarChar, userID)
-                                          .query('SELECT * FROM vwBiWeekHoursSummary WHERE userID = @UserID');
+                .query('SELECT * FROM vwBiWeekHoursSummary WHERE userID = @UserID');
             return response.recordset[0];
         }
     } catch (error) {
@@ -1242,8 +1231,8 @@ app.get('/api/manager/employeeHours', async (req, res) => {
     try {
         const { sessionID } = req.query;
         //const user = await getUserBySession(sessionID);
-        if(!sessionID) {
-            res.status(401).json({error: "Unauthorized access!"});
+        if (!sessionID) {
+            res.status(401).json({ error: "Unauthorized access!" });
         }
         const response = await getEmpBiHours();
         res.status(200).json(response);
@@ -1258,8 +1247,8 @@ app.get('/api/employee/employeeHours', async (req, res) => {
     try {
         const { sessionID } = req.query;
         const user = await getUserBySession(sessionID);
-        if(!user) {
-            res.status(401).json({error: "Unauthorized access!"});
+        if (!user) {
+            res.status(401).json({ error: "Unauthorized access!" });
         }
         const response = await getEmpBiHours(user.UserID);
         res.status(200).json(response);
@@ -1273,7 +1262,7 @@ app.get('/api/users', async (req, res) => {
     try {
         const { username } = req.query;
         const user = await findUser(username);
-        if(!user) {
+        if (!user) {
             res.status(200).json({ message: 'Username is available!' });
             return;
         }
@@ -1305,8 +1294,8 @@ app.post('/api/sessions/employee', async (req, res) => {
 app.post('/api/sessions/manager', async (req, res) => {
     try {
         const { username, password, managerID } = req.body;
-        if(managerID != 123456) { // CHANGE THIS TO BE MORE SECURE IN A LATER SPRINT
-            return res.status(401).json({error: 'Invalid Manager ID'});
+        if (managerID != 123456) { // CHANGE THIS TO BE MORE SECURE IN A LATER SPRINT
+            return res.status(401).json({ error: 'Invalid Manager ID' });
         }
         // Authenticate the user
         const user = await authenticateManager(username, password);
@@ -1339,7 +1328,7 @@ app.delete('/api/sessions', async (req, res) => {
 // Saved-session login thingy :)
 app.get('/api/sessions', async (req, res) => {
     try {
-		const { sessionID } = req.query;
+        const { sessionID } = req.query;
         // Get the user based on the session ID
         const user = await getUserBySession(sessionID);
         if (!user) {
@@ -1354,7 +1343,7 @@ app.get('/api/sessions', async (req, res) => {
 //Recipe GET
 app.get('/api/recipe', async (req, res) => {
     const recipeID = req.query.id;
-    if(recipeID){
+    if (recipeID) {
         try {
             const recipe = await getRecipeFromDb(recipeID);
 
@@ -1377,7 +1366,7 @@ app.get('/api/recipeNames', async (req, res) => {
         const { category } = req.query;
         const recipeNames = await getRecipeNames(category);
 
-        if(recipeNames) {
+        if (recipeNames) {
             if (recipeNames.length > 0) {
                 res.status(200).json(recipeNames);
             } else {
@@ -1393,7 +1382,7 @@ app.get('/api/recipeNames', async (req, res) => {
 //Employee Timesheets GET
 app.get('/api/employeeTimesheet', async (req, res) => {
     const typeID = req.query;
-    if(typeID){
+    if (typeID) {
         try {
             const timesheet = await getTimesheetFromDb(typeID);
 
@@ -1419,11 +1408,11 @@ app.delete('/api/recipe', async (req, res) => {
         await removeRecipe(recipeID);
 
         //Destroys
-        res.status(200).json({ message: 'Recipe Successfully Deleted'});
+        res.status(200).json({ message: 'Recipe Successfully Deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-});              
+});
 
 //ingredient GET
 app.get('/api/ingredient', async (req, res) => {
@@ -1456,23 +1445,23 @@ app.delete('/api/ingredient', async (req, res) => {
         await removeIngredient(ingredientID);
 
         //Destroys
-        res.status(200).json({ message: 'Ingredient Successfully Deleted'});
+        res.status(200).json({ message: 'Ingredient Successfully Deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-});     
+});
 
 app.put('/api/ingredient', async (req, res) => {
     const ingredientName = req.query.name;
     const { newIngredientName, otherAttribute } = req.body;
 
     if (!ingredientName || !newIngredientName) {
-        return res.status(400).json({ error: 'Invalid Request', message: 'Both original ingredient name and new ingredient names are required.'});
+        return res.status(400).json({ error: 'Invalid Request', message: 'Both original ingredient name and new ingredient names are required.' });
     }
 
     try {
         const updated = await updateIngredient(ingredientName, newIngredient, otherAttribute);
-        
+
         if (updated) {
             res.status(200).json('Ingredient Successfully Updated');
         } else {
@@ -1487,25 +1476,25 @@ app.put('/api/ingredient', async (req, res) => {
 app.get('/api/inventoryItems', async (req, res) => {
     try {
         const { category } = req.query;
-        let inventoryItems; 
-        if(category == 'Ingredients') {
+        let inventoryItems;
+        if (category == 'Ingredients') {
             inventoryItems = await getIngredientNames();
         }
-        else if(category == 'Products') {
+        else if (category == 'Products') {
             inventoryItems = await getProductNames();
         }
-        else if(category == 'Vendors') {
+        else if (category == 'Vendors') {
             inventoryItems = await getVendorNames();
         }
-        else if(category == 'Equipment') {
+        else if (category == 'Equipment') {
             inventoryItems = await getEquipNames();
         }
         else {
-            res.status(404).json({error: 'Invalid category!'});
+            res.status(404).json({ error: 'Invalid category!' });
             return;
         }
 
-        if(inventoryItems) {
+        if (inventoryItems) {
             if (inventoryItems.length > 0) {
                 res.status(200).json(inventoryItems);
             } else {
@@ -1677,9 +1666,9 @@ app.get('/api/checkRecipeIngredients', async (req, res) => {
             let isSufficient = (row.IsSufficient === 'TRUE') ? 1 : 0;
             return { RecipeID: row.IngredientID, available: isSufficient };
         });
-        
+
         res.status(200).json(responseArray);
-            
+
     } catch (error) {
         console.error('Error fetching ingredients:', error);
         res.status(500).json({ message: 'Error fetching ingredients' });
@@ -1963,8 +1952,8 @@ async function getClockStatus(LogID) {
         const request = pool.request();
 
         const result = await request
-                .input('LogID', sql.NVarChar, LogID)
-                .query('SELECT clockOutTime FROM tblLog WHERE logID = @LogID');
+            .input('LogID', sql.NVarChar, LogID)
+            .query('SELECT clockOutTime FROM tblLog WHERE logID = @LogID');
         console.log(result)
         if (!result) {
             return null;
@@ -1983,7 +1972,7 @@ app.get('/api/clock', async (req, res) => {
         return res.status(400).json({ error: 'sessionID and logID are required' });
     }
     let user;
-    if(!(user = await getUserBySession(sessionID))) {
+    if (!(user = await getUserBySession(sessionID))) {
         return res.status(401).json({ error: 'Session has expired!' });
     }
     // get clock status
@@ -1991,13 +1980,13 @@ app.get('/api/clock', async (req, res) => {
     // if status is null, then clockOutTime is NULL, aka still clocked in
     // returns "clockOutTime: null/TIME"
     console.log(status)
-    if(!status || !status.clockOutTime) {
-        res.status(200).json({status: 1});
+    if (!status || !status.clockOutTime) {
+        res.status(200).json({ status: 1 });
     }
     else {
-        res.status(200).json({status: 0});
+        res.status(200).json({ status: 0 });
     }
-    
+
 })
 
 //POST to add clock in time, userID, and dayID
@@ -2008,12 +1997,12 @@ app.post('/api/clockin', async (req, res) => {
         return res.status(400).json({ error: 'sessionID is required' });
     }
     let user;
-    if(!(user = await getUserBySession(sessionID))) {
+    if (!(user = await getUserBySession(sessionID))) {
         return res.status(401).json({ error: 'Session has expired!' });
     }
 
     try {
-        await poolConnect; 
+        await poolConnect;
         const request = pool.request();
 
         const currentDateTime = new Date();//gets the current date and time
@@ -2035,7 +2024,7 @@ app.post('/api/clockin', async (req, res) => {
             .input('userID', sql.NVarChar, user.UserID)
             .input('dayID', sql.NVarChar, dayID)
             .input('clockInTime', sql.DateTime, currentDateTime)
-            .input('isHoliday', sql.Bit, 0) 
+            .input('isHoliday', sql.Bit, 0)
             .query(`INSERT INTO tblLog (logID, userID, dayID, clockInTime, clockOutTime, isHoliday) 
                     VALUES (@logID, @userID, @dayID, @clockInTime, NULL, @isHoliday)`);
 
@@ -2054,7 +2043,7 @@ app.post('/api/clockout', async (req, res) => {
         return res.status(400).json({ error: 'sessionID is required' });
     }
     let user;
-    if(!(user = await getUserBySession(sessionID))) {
+    if (!(user = await getUserBySession(sessionID))) {
         return res.status(401).json({ error: 'Session has expired!' });
     }
 
@@ -2062,7 +2051,7 @@ app.post('/api/clockout', async (req, res) => {
         await poolConnect;
         const request = pool.request();
 
-       
+
         const currentDateTime = new Date();  //Gets the current date and time
         const currentDate = currentDateTime.toISOString().split('T')[0]; //Formats the date as YYYY-MM-DD'T'HOUR:MINUTE:SECOND
 
@@ -2115,7 +2104,7 @@ async function mulRecipe(recipeID, num) {
 
 async function quantityCheck(ing) {
     try {
-        await poolConnect; 
+        await poolConnect;
         const request = pool.request();
         request.input('IngredientID', sql.NVarChar, ing.IngredientID);
         const check = await request.query(`
@@ -2132,32 +2121,31 @@ async function quantityCheck(ing) {
 
 async function deductInventory(ing) {
     try {
-        await poolConnect; 
-        let curr = ing.ScaledQuantity;  
-        while (curr > 0) 
-            {
+        await poolConnect;
+        let curr = ing.ScaledQuantity;
+        while (curr > 0) {
 
-            const request = pool.request();  
+            const request = pool.request();
             request.input('IngredientID', sql.NVarChar, ing.IngredientID);
             //moved here so that it will grab a new ingredient each time that is in the inventory
             //when it was outside the loop it was grabbing one instance of each ingredient for the entire recipe
-                //So if we had an instance of 10 and one of 1000, it would use the oldest(10), delete that ingredient instance in the inventory table
-                //Then when it tried to use it, since there was not a new instance of an ingredient grabbed, it broke
+            //So if we had an instance of 10 and one of 1000, it would use the oldest(10), delete that ingredient instance in the inventory table
+            //Then when it tried to use it, since there was not a new instance of an ingredient grabbed, it broke
             const result1 = await request.query(`
                 SELECT TOP 1 *
                 FROM tblInventory inv
                 WHERE inv.IngredientID = @IngredientID AND GETDATE() <= inv.ExpireDateTime AND inv.Quantity > 0
                 ORDER BY inv.ExpireDateTime
             `);
-            
+
             if (result1.recordset.length === 0) {
                 throw new Error('Not enough inventory available.');
             }
-            
+
             let invItem = result1.recordset[0];  // Get the top inventory item
             let newQuantity = invItem.Quantity - curr;  // Calculate the new quantity
             curr = newQuantity * -1;  // Remaining quantity needed (if negative, it means we need more)
-            
+
             request.input('EntityID', sql.NVarChar, invItem.EntityID);
             if (newQuantity <= 0) {  // If we took all the quantity from that row
                 await request.query(`
@@ -2165,7 +2153,7 @@ async function deductInventory(ing) {
                     WHERE tblInventory.EntityID = @EntityID
                 `);
             } else {  // There's still some quantity left
-                request.input('NewQuantity', sql.Float, newQuantity); 
+                request.input('NewQuantity', sql.Float, newQuantity);
                 //REMOVED * -1: Was just making everything a negative. 
                 //If a recipe needed 1 kilo butter and we had 1000 in inventory.
                 //It would use 1001 butter and leave us with -999
@@ -2175,7 +2163,7 @@ async function deductInventory(ing) {
                     WHERE EntityID = @EntityID
                 `);
             }
-        } 
+        }
     } catch (error) {
         console.error('Error deducting from inventory for baking:', error);
         throw error;
@@ -2204,11 +2192,11 @@ async function stockAfterBake(recipe, num) {
 }
 
 app.post('/api/startBaking', async (req, res) => {
-    const {recipeID, num} = req.body;
+    const { recipeID, num } = req.body;
     if (recipeID) {
         try {
             const recipe = await getRecipeFromDb(recipeID);
-            
+
             if (!recipe) {
                 return res.status(404).json({ error: 'Recipe not found' });
             }
@@ -2244,18 +2232,18 @@ app.delete('/api/vendor', async (req, res) => {
         await removeVendor(vendorID);
 
         //Destroys
-        res.status(200).json({ message: 'Vendor Successfully Deleted'});
+        res.status(200).json({ message: 'Vendor Successfully Deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
     }
-});              
+});
 
 //VendorNames GET
 app.get('/api/vendorNames', async (req, res) => {
     try {
         const vendorNames = await getVendorNames();
 
-        if(vendorNames) {
+        if (vendorNames) {
             if (vendorNames.length > 0) {
                 res.status(200).json(vendorNames);
             } else {
@@ -2404,12 +2392,12 @@ app.post('/api/reOrderIngredient', async (req, res) => {
     }
 
     try {
-       
+
         await poolConnect;
 
         const request = pool.request();
         let result = await request
-            .input('ingredientID', sql.NVarChar, ingredientID)  
+            .input('ingredientID', sql.NVarChar, ingredientID)
             .query(`
                 SELECT * FROM vwReorder
                 WHERE ingredientID = @ingredientID;
@@ -2422,24 +2410,24 @@ app.post('/api/reOrderIngredient', async (req, res) => {
         let row = result.recordset[0];
 
         const poNumber = `PO${uuid.v4()}`;
-        
+
 
         let insertRequest = pool.request();
         await insertRequest
             .input('PONumber', sql.NVarChar(50), poNumber)
-            .input('VendorID', sql.NVarChar, row.vendorID)  
+            .input('VendorID', sql.NVarChar, row.vendorID)
             .input('IngredientID', sql.NVarChar, row.ingredientID)
             .input('Quantity', sql.Decimal(10, 2), row.ReorderAmount)
             .input('Price', sql.Decimal(18, 2), row.result)
             .input('CreateDateTime', sql.DateTime, new Date())
-            .input('FulfillDateTime', sql.DateTime, null) 
+            .input('FulfillDateTime', sql.DateTime, null)
             .query(`
                 INSERT INTO tblOrder (PONumber, VendorID, IngredientID, Quantity, Price, CreateDateTime, FulfillDateTime)
                 VALUES (@PONumber, @VendorID, @IngredientID, @Quantity, @Price, @CreateDateTime, @FulfillDateTime);
             `);
 
         return res.status(201).json({ poNumber: poNumber, message: 'Order successfully created' });
-        
+
     } catch (error) {
         console.error('Error processing reorder:', error);
         return res.status(500).json({ error: 'An error occurred while processing the request', message: error.message });
@@ -2506,9 +2494,9 @@ app.post('/api/fulfillDateTime', async (req, res) => {
 
         const ingredientName = nameRequest.recordset[0].Name;
 
-        const entityID = require('uuid').v4();  
+        const entityID = require('uuid').v4();
         const expireDateTime = new Date(fulfillDate);
-        expireDateTime.setDate(fulfillDate.getDate() + 7); 
+        expireDateTime.setDate(fulfillDate.getDate() + 7);
 
         // Insert new inventory record into tblInventory
         const insertInventoryRequest = pool.request();
@@ -2519,7 +2507,7 @@ app.post('/api/fulfillDateTime', async (req, res) => {
             .input('UserID', sql.Int, 1) //Just made 1 for now since that's what we've been using
             .input('Notes', sql.NVarChar(255), `new order of ingredient ${ingredientName}`)
             .input('Cost', sql.Decimal(18, 2), cost)
-            .input('CreateDateTime', sql.DateTime,  fulfillDate) //using the fulfull date at the start date
+            .input('CreateDateTime', sql.DateTime, fulfillDate) //using the fulfull date at the start date
             .input('ExpireDateTime', sql.DateTime, expireDateTime)
             .input('PONumber', sql.NVarChar(50), PONumber)
             .query(`
@@ -2536,6 +2524,46 @@ app.post('/api/fulfillDateTime', async (req, res) => {
 });
 
 
+
+app.post('/api/addAvailibility', async (req, res) => {
+    try {
+        await poolConnect;
+
+        const weekResult = await pool.request().query(`
+            SELECT weekID, dayID FROM tblDay
+            WHERE weekID = (
+                SELECT TOP 1 weekID FROM tblWeek
+                ORDER BY ABS(DATEDIFF(DAY, StartDate, GETDATE()))
+            )
+            ORDER BY Date
+        `);
+
+        if (weekResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'No weekID found for today\'s date' });
+        }
+
+        const weekID = weekResult.recordset[0].weekID;
+        const userID = '1'; 
+        for (const day of weekResult.recordset) {
+            const dayID = day.dayID;
+            
+            const request = pool.request();
+            await request
+                .input('userID', sql.NVarChar, userID)
+                .input('weekID', sql.NVarChar, weekID)
+                .input('dayID', sql.NVarChar, dayID)
+                .query(`
+                    INSERT INTO tblAvailability (userID, weekID, dayID, shiftOne, shiftTwo) 
+                    VALUES (@userID, @weekID, @dayID, @shiftOne, @shiftTwo)
+                `);
+        }   
+
+        res.status(200).json({ message: 'Availability recorded successfully for all days' });
+    } catch (error) {
+        console.error('Error recording availability:', error);
+        res.status(500).send('Error recording availability');
+    }
+});
 
 
 // Initialize the database tables and start the server
