@@ -148,6 +148,17 @@ class Vendor {
     }
 }
 
+class EmpAvailability {
+    constructor(user_ID, week_ID, day_ID, shift_One, shift_two)
+    {
+        this.UserID = user_ID;
+        this.WeekID = week_ID;
+        this.DayID = day_ID;
+        this.ShiftOne = shift_One;
+        this.ShiftTwo = shift_Two;
+    }
+}
+
 // Required modules
 const express = require('express');
 const session = require('express-session');
@@ -1903,6 +1914,33 @@ async function addIngredient(newIngredient) {
     }
 }
 
+async function addAvailability(UserID, WeekID, DayID, ShiftOne, ShiftTwo) {
+    try {
+        await poolConnect;
+        const request = pool.request();
+
+        const query = `
+            INSERT INTO tblAvailability (userID, weekID, dayID, shiftOne, shiftTwo)
+            VALUES (@UserID, @WeekID, @DayID, @ShiftOne, @ShiftTwo)
+        `;
+
+        // Input parameters
+        request.input('UserID', sql.NVarChar, UserID);
+        request.input('WeekID', sql.NVarChar, WeekID);
+        request.input('DayID', sql.NVarChar, DayID);
+        request.input('ShiftOne', sql.NVarChar, ShiftOne);
+        request.input('ShiftTwo', sql.NVarChar, ShiftTwo);
+
+        // Execute the query
+        await request.query(query);
+
+        console.log('Availability added successfully');
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
 app.post('/api/ingredient', async (req, res) => {
     const { Name, Description, IngredientCategoryID, Measurement, MaxAmount, ReorderAmount, MinAmount, Allergen } = req.body;
     if (!Name || !Description || !IngredientCategoryID || !Measurement || !MaxAmount || !ReorderAmount || !MinAmount || Allergen === undefined) {
@@ -2227,6 +2265,133 @@ app.get('/api/vendorNames', async (req, res) => {
     } catch (error) {
         res.status(500).send('Error retrieving ingredients');
         res.status(500).json({ error: 'Error retrieving ingredients', message: error.message });
+    }
+});
+
+app.get('/api/empAvailability', async (req, res) => {
+    const { userName, weekID, dayID } = req.query.name;
+    if (!userName || !weekID || !dayID) {
+        return res.status(400).json({ error: 'Invalid request', message: 'The employees name is required'});
+    }
+    try {
+        const request = pool.request();
+        request.input('UserID', sql.NVarChar, userName);
+        request.input('WeekID', sql.NVarChar, weekID);
+        request.input('DayID', sql.NVarChar, dayID);
+        const result = await request.query('SELECT * FROM tblAvailability WHERE userID = @UserID, weekID = @WeekID, dayID = @DayID');
+        const availability = result.recordset[0];
+
+        if (availability) {
+            res.status(200).json(availability);   //Sends as a JSON response
+        } else {
+            res.status(404).send('Availability not found');
+        }
+    } catch (error) {
+        res.status(500).send('Error fetching availability');
+    }
+})
+
+app.post('/api/empAvailability', async (req, res) => {
+    await poolConnect;
+    const { UserID, ShiftOne, ShiftTwo } = req.body;
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const MM = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const formattedDate = '${yyyy}${MM}${dd}';
+
+    const dayQuery = `SELECT DayID FROM tblDay WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
+    const request = pool.request();
+    request.input('formattedDate', sql.NVarChar, formattedDate);
+    const DayID = await request.query(dayQuery);
+
+    const weekQuery = `SELECT WeekID FROM tblWeek WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
+    const WeekID = await request.query(weekQuery);
+
+    if (!UserID || !WeekID || !DayID || !ShiftOne || !ShiftTwo) {
+        return res.status(400).send('Missing required fields');
+    }
+
+    try {
+        await addAvailability(UserID, WeekID, DayID, ShiftOne, ShiftTwo);
+        res.status(201).send('Ingredient added successfully');
+    }
+    catch (error) {
+        res.status(500).send('Internal server error');
+    }
+});
+
+app.put('/api/empAvailability', async (req, res) => {
+    try {
+        await poolConnect; // Ensure the database connection is established
+        const request = pool.request();
+
+        // Extract parameters from the request body
+        const { user_ID, week_ID, day_ID, shift_One, shift_Two } = req.body;
+
+        // Input validations
+        if (!user_ID || !week_ID || !day_ID || shift_One === undefined || shift_Two === undefined) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Set the input parameters for the query
+        request.input('user_ID', sql.NVarChar, user_ID);
+        request.input('week_ID', sql.NVarChar, week_ID);
+        request.input('day_ID', sql.NVarChar, day_ID);
+        request.input('shift_One', sql.Bit, shift_One);
+        request.input('shift_Two', sql.Bit, shift_Two);
+
+        // Execute the update query
+        const result = await request.query(`
+            UPDATE EmpAvailability
+            SET shift_One = @shift_One, shift_Two = @shift_Two
+            WHERE user_ID = @user_ID AND week_ID = @week_ID AND day_ID = @day_ID
+        `);
+
+        if (result.rowsAffected[0] === 0) {
+            console.log('No entry found to update');
+            return res.status(404).json({ message: 'No entry found to update' });
+        }
+
+        console.log('Entry updated successfully');
+        return res.status(200).json({ message: 'Entry updated successfully' });
+
+    } catch (error) {
+        console.error('Error updating entry:', error);
+        return res.status(500).json({ message: 'Error updating entry', error });
+    }
+});
+
+
+app.delete('/api/empAvailability', async (req, res) => {
+    try {
+        await poolConnect; // Ensure the database connection is established
+        const request = pool.request();
+
+        // Extract parameters from the request body
+        const { user_ID, week_ID, day_ID } = req.body;
+
+        // Pass the parameters to the SQL query
+        request.input('user_ID', sql.NVarChar, user_ID);
+        request.input('week_ID', sql.NVarChar, week_ID);
+        request.input('day_ID', sql.NVarChar, day_ID);
+
+        const result = await request.query(`
+            DELETE FROM EmpAvailability
+            WHERE user_ID = @user_ID AND week_ID = @week_ID AND day_ID = @day_ID
+        `);
+
+        if (result.rowsAffected[0] === 0) {
+            console.log('No entry found to delete');
+            return res.status(404).json({ message: 'No entry found to delete' });
+        }
+
+        console.log('Entry deleted successfully');
+        return res.status(200).json({ message: 'Entry deleted successfully' });
+        
+    } catch (error) {
+        console.error('Error deleting entry:', error);
+        return res.status(500).json({ message: 'Error deleting entry', error });
     }
 });
 
