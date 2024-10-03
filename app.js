@@ -1459,6 +1459,7 @@ app.delete('/api/ingredient', async (req, res) => {
     }
 });
 
+//
 app.put('/api/ingredient', async (req, res) => {
     const ingredientName = req.query.name;
     const { newIngredientName, otherAttribute } = req.body;
@@ -2231,6 +2232,142 @@ app.post('/api/startBaking', async (req, res) => {
     }
 });
 
+//Takes in vendorID, vendorName, addressID, phoneNumberID, emailID, notes
+//Updates the tblVendor
+app.put('/api/vendor', async (req, res) => {
+    //Gets the argruments
+    await poolConnect;
+    const request = pool.request();
+
+    try {
+        const { vendorID, vendorName, address, phoneNumber, email, notes } = req.body;
+
+        if(!vendorID) {
+            res.status(400).json({message : 'Missing VendorID'});
+        }
+
+        //Change Vendor Name
+        if(vendorName) {
+            const changeNameQuery = `UPDATE tblVendor
+                                    SET VendorName = @vendorName
+                                    WHERE VendorID = @vendorID`;
+            request.input('vendorName', sql.NVarChar, vendorName);
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const result = await request.query(changeNameQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Vendor name failed to update or no vendor found'});
+            }
+        }
+
+        //Change the Address
+        if(address) {
+            //Get Address ID
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const queryAddressID = `SELECT AddressID
+                                FROM tblVendorInfo
+                                WHERE VendorID = @vendorID`;
+            const addressID = request.query(queryAddressID);
+
+            //In VendorInfo
+            request.input('address', sql.NVarChar, address);
+            request.input('addressID', sql.NVarChar, addressID);
+
+            //In Address
+            const changeAddressQuerytblUserAddress = `UPDATE tblUserAddress
+                                                    SET Address = @address
+                                                    WHERE AddressID = @addressID`;
+            const result = await request.query(changeAddressQuerytblUserAddress);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Address failed to update or no address found'});
+            }
+        }
+
+        //Change the Phone Number
+        if(phoneNumber) {
+            //Get Phone Number ID
+            const queryPhoneNumberID = `SELECT PhoneNumberID
+                                    FROM tblVendorInfo
+                                    WHERE VendorID = @vendorID`;
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const phoneNumberID = await request.query(queryPhoneNumberID);
+
+            //Change Phone Number
+            const updateArea = `UPDATE tblPhoneNumber
+                                SET AreaCode = @area
+                                WHERE PhoneNumberID = @phoneNumberID`;
+            request.input('area', sql.NVarChar, phoneNumber.substring(0, 3));
+            request.input('phoneNumberID', sql.NVarChar, phoneNumberID);
+            await request.query(updateArea);
+
+            const updateNumber = `UPDATE tblPhoneNumber
+                                SET Number = @number
+                                WHERE PhoneNumberID = @phoneNumberID`;
+            request.input('number', sql.NVarChar, phoneNumber.substring(3, 9));
+            const result = await request.query(updateNumber);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Phone number failed to update or no phone number found'});
+            }
+        }
+
+        //Change the Email
+        if(email) {
+            //Get the Email
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const emailQuery = `SELECT EmailID 
+                                FROM tblVendorInfo 
+                                WHERE VendorID = @vendorID`;
+            const emailID = await request.query(emailQuery);
+
+            //Change the Email
+            const updateEmail = `UPDATE tblEmail
+                                SET EmailAddress = @emailAddress
+                                WHERE EmailID = @emailID`;
+            request.input('emailID', sql.NVarChar, emailID);
+            request.input('emailAddress', sql.NVarChar, email);
+            const result = await request.query(updateEmail);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Email failed to update or no email found'});
+            }
+        }
+
+        if(notes) {
+            request.input('notes', sql.NVarChar, notes);
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const updateNotes = `UPDATE tblVendorInfo
+                                SET Notes = @notes
+                                WHERE VendorID = @vendorID`;
+            const result = await request.query(updateNotes);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Notes failed to update or no notes found'});
+            }
+        }
+
+        if (rowsUpdated) {
+            return res.status(404).json({ message: 'Vendor Updated Successfully'});
+        } else {
+            return res.status(400).json({ message: 'No Updates Were Made'});
+        }
+    } catch (error) {
+        console.error('Error updating vendor:', error);
+        return res.status(500).json({ message: 'Error Updating Vendor: ', error});
+    }
+});
+
 //DELETE for Vendor
 app.delete('/api/vendor', async (req, res) => {
     try {
@@ -2383,10 +2520,10 @@ app.put('/api/empAvailability', async (req, res) => {
             request.input('dayID', sql.NVarChar, dayArray[i].DayID);
             request.input('shiftOne', sql.Bit, dayArray[i].ShiftOne);
             request.input('shiftTwo', sql.Bit, dayArray[i].ShiftTwo);
-            const query = `UPDATE [dbo].[tblAvailability] 
-                        SET shiftOne = , shiftTwo = 0
+            const query = `UPDATE tblAvailability 
+                        SET shiftOne = @shiftOne, shiftTwo = @shiftTwo
                         WHERE userID = @userID AND dayID = @DayID AND weekID = @WeekID`;
-            await request.query(query);
+            const result = await request.query(query);
         }
 
         //Error Handling
