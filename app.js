@@ -994,6 +994,8 @@ async function updateIngredient(ingredientName, newIngredientName, otherAttribut
 // Get user by session (used to automatically sign someone in based on SessionStorage for the web frontend, not sure about mobile just yet)
 async function getUserBySession(sessionID) {
     try {
+        console.log('Querying for sessionID:', sessionID);
+
         const request = pool.request();
         const result = await request.input('SessionID', sql.NVarChar, sessionID)
             .query('SELECT S.SessionID, S.UserID, S.UserType, U.FirstName, U.LastName FROM tblSession S INNER JOIN tblUser U ON S.UserID = U.UserID WHERE S.SessionID = @SessionID');
@@ -2032,17 +2034,19 @@ async function addAvailability(UserID, WeekID, DayID, ShiftOne, ShiftTwo) {
         await poolConnect;
         const request = pool.request();
 
-        const query = `
-            INSERT INTO tblAvailability (userID, weekID, dayID, shiftOne, shiftTwo)
-            VALUES (@UserID, @WeekID, @DayID, @ShiftOne, @ShiftTwo)
-        `;
+
 
         // Input parameters
         request.input('UserID', sql.NVarChar, UserID);
         request.input('WeekID', sql.NVarChar, WeekID);
         request.input('DayID', sql.NVarChar, DayID);
-        request.input('ShiftOne', sql.NVarChar, ShiftOne);
-        request.input('ShiftTwo', sql.NVarChar, ShiftTwo);
+        request.input('ShiftOne', sql.BIT, ShiftOne);
+        request.input('ShiftTwo', sql.BIT, ShiftTwo);
+
+        const query = `
+            INSERT INTO tblAvailability (userID, weekID, dayID, shiftOne, shiftTwo)
+            VALUES (@UserID, @WeekID, @DayID, @ShiftOne, @ShiftTwo)
+        `;
 
         // Execute the query
         await request.query(query);
@@ -2539,112 +2543,79 @@ app.get('/api/empAvailability', async (req, res) => {
     }
 })
 
-app.post('/api/empAvailability', async (req, res) => {
-    await poolConnect;
-    const { SessionID, ShiftOne, ShiftTwo } = req.body;
-    const User = getUserBySession(SessionID);
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const MM = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const formattedDate = '${yyyy}${MM}${dd}';
 
-    const dayQuery = `SELECT DayID FROM tblDay WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
-    const request = pool.request();
-    request.input('formattedDate', sql.NVarChar, formattedDate);
-    const DayID = await request.query(dayQuery);
-
-    const weekQuery = `SELECT WeekID FROM tblWeek WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
-    const WeekID = await request.query(weekQuery);
-
-    if (!UserID || !WeekID || !DayID || !ShiftOne || !ShiftTwo) {
-        return res.status(400).send('Missing required fields');
-    }
-
-    try {
-        await addAvailability(UserID, WeekID, DayID, ShiftOne, ShiftTwo);
-        res.status(201).send('Ingredient added successfully');
-    }
-    catch (error) {
-        res.status(500).send('Internal server error');
-    }
-});
-
+//just needed an update for the employee availability
+//didnt need a post since we are 'hardcoding' our week into the database
+//The start day is 9-30-2024
+//cURL command to test this is: 
+    //curl -X PUT http://localhost:3030/api/empAvailability -H "Content-Type: application/json" -d "{\"sessionID\": \"02ce9aec-5e93-415b-b7eb-ac553a5c0036\", \"mondayShiftOne\": 1, \"mondayShiftTwo\": 1, \"tuesdayShiftOne\": 1, \"tuesdayShiftTwo\": 1, \"wednesdayShiftOne\": 1, \"wednesdayShiftTwo\": 1, \"thursdayShiftOne\": 1, \"thursdayShiftTwo\": 1, \"fridayShiftOne\": 1, \"fridayShiftTwo\": 1, \"saturdayShiftOne\": 1, \"saturdayShiftTwo\": 1, \"sundayShiftOne\": 1, \"sundayShiftTwo\": 1}" 
 app.put('/api/empAvailability', async (req, res) => {
-    await poolConnect; // Ensure the database connection is established
-    const request = pool.request();
+    await poolConnect; 
 
     try {
-        const { sessionID, sShift_One, sShift_Two, mShift_One, mShift_Two, 
-            tShift_One, tShift_Two, wShift_One, wShift_Two, thShift_One, 
-            thShift_Two, fShift_One, fShift_Two, saShift_One, saShift_Two } = req.body;
-        const user = getUserBySession(sessionID);
+        const { sessionID, mondayShiftOne, mondayShiftTwo, tuesdayShiftOne, tuesdayShiftTwo,
+            wednesdayShiftOne, wednesdayShiftTwo, thursdayShiftOne, thursdayShiftTwo, fridayShiftOne,
+            fridayShiftTwo, saturdayShiftOne, saturdayShiftTwo, sundayShiftOne, sundayShiftTwo } = req.body;
 
-        //Checks if it is valid
-        if(!user) {
-            res.status(401).send('User Unauthorized');
+        const user = await getUserBySession(sessionID);
+
+        if (!user) {
+            return res.status(401).send('User Unauthorized');
         }
         const userID = user.UserID;
 
-        // Input validations
-        if (!userID || !sShift_One || !sShift_Two || !mShift_One || !mShift_Two ||
-            !tShift_One || !tShift_Two || !wShift_One || !wShift_Two || !thShift_One ||
-                !thShift_Two || !fShift_One || !fShift_Twos || !saShift_One || !saShift_Two || !formattedDate) {
+        if (!userID) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        //Gets the dayID and WeekID
-        const Sunday = new Date('2024-09-29T00:00:00');
-        const yyyy = Sunday.getFullYear();
-        const MM = String(Sunday.getMonth() + 1).padStart(2, '0');
-        const dd = String(Sunday.getDate()).padStart(2, '0');
-        const formattedDate = '${yyyy}${MM}${dd}';
+        const Monday = new Date('2024-09-30T00:00:00');
 
-        const request = pool.request();
-        request.input('formattedDate', sql.NVarChar, formattedDate);
-        const weekQuery = `SELECT WeekID FROM tblWeek WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
-        const WeekID = await request.query(weekQuery);
+        const dayArray = [
+            { dayName: 'Monday', shiftOne: mondayShiftOne, shiftTwo: mondayShiftTwo },
+            { dayName: 'Tuesday', shiftOne: tuesdayShiftOne, shiftTwo: tuesdayShiftTwo },
+            { dayName: 'Wednesday', shiftOne: wednesdayShiftOne, shiftTwo: wednesdayShiftTwo },
+            { dayName: 'Thursday', shiftOne: thursdayShiftOne, shiftTwo: thursdayShiftTwo },
+            { dayName: 'Friday', shiftOne: fridayShiftOne, shiftTwo: fridayShiftTwo },
+            { dayName: 'Saturday', shiftOne: saturdayShiftOne, shiftTwo: saturdayShiftTwo },
+            { dayName: 'Sunday', shiftOne: sundayShiftOne, shiftTwo: sundayShiftTwo }
+        ];
 
-        //Sets the day booleans
-        var dayArray = new Array(7);
-        dayArray[0].ShiftOne = sShift_One;
-        dayArray[0].ShiftTwo = sShift_Two;
-        dayArray[1].ShiftOne = mShift_One;
-        dayArray[1].ShiftTwo = mShift_Two;
-        dayArray[2].ShiftOne = tShift_One;
-        dayArray[2].ShiftTwo = tShift_Two;
-        dayArray[3].ShiftOne = wShift_One;
-        dayArray[3].ShiftTwo = wShift_Two;
-        dayArray[4].ShiftOne = thShift_One;
-        dayArray[4].ShiftTwo = thShift_Two;
-        dayArray[5].ShiftOne = fShift_One;
-        dayArray[5].ShiftTwo = fShift_Two;
-        dayArray[6].ShiftOne = saShift_One;
-        dayArray[6].ShiftTwo = saShift_Two;
+        for (let i = 0; i < dayArray.length; i++) {
+            const currentDay = new Date(Monday);
+            currentDay.setDate(Monday.getDate() + i);
 
-        //Gets the dayIDs and sets them to the array
-        for(let i = 0; i < 7; i++) {
-            const dayQuery = `SELECT DayID FROM tblDay WHERE Date = (FORMAT(GETDATE(), @formattedDate))`;
-            const dayID = await request.query(dayQuery);
-            dayArray[i].DayID = dayID
-            Sunday.setDate(Sunday.getDate()+1);
-        }
+            const yyyy = currentDay.getFullYear();
+            const MM = String(currentDay.getMonth() + 1).padStart(2, '0');
+            const dd = String(currentDay.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}${MM}${dd}`;
 
-        //Updates the Table
-        for(let i = 0; i < 7; i++) {
-            request.input('dayID', sql.NVarChar, dayArray[i].DayID);
-            request.input('shiftOne', sql.Bit, dayArray[i].ShiftOne);
-            request.input('shiftTwo', sql.Bit, dayArray[i].ShiftTwo);
-            const query = `UPDATE tblAvailability 
-                        SET shiftOne = @shiftOne, shiftTwo = @shiftTwo
-                        WHERE userID = @userID AND dayID = @DayID AND weekID = @WeekID`;
-            const result = await request.query(query);
-        }
+            const request = pool.request();
+            request.input('date', sql.NVarChar, formattedDate);
+            request.input('userID', sql.NVarChar, userID);
 
-        //Error Handling
-        if (result.rowsAffected[0] === 0) {
-            console.log('No entry found to update');
-            return res.status(404).json({ message: 'No entry found to update' });
+            const dayQuery = 'SELECT DayID FROM tblDay WHERE Date = @date';
+            const dayResult = await request.query(dayQuery);
+            if (dayResult.recordset.length === 0) {
+                continue; 
+            }
+
+            const dayID = dayResult.recordset[0].DayID;
+
+            request.input('dayID', sql.NVarChar, dayID);
+            request.input('shiftOne', sql.Bit, dayArray[i].shiftOne);
+            request.input('shiftTwo', sql.Bit, dayArray[i].shiftTwo);
+
+            const updateQuery = `
+                UPDATE tblAvailability
+                SET shiftOne = @shiftOne, shiftTwo = @shiftTwo
+                WHERE userID = @userID AND dayID = @dayID`;
+
+            const updateResult = await request.query(updateQuery);
+            console.log('Day updated');
+            if (updateResult.rowsAffected[0] === 0) {
+                console.log(`No entry found to update for DayID ${dayID}`);
+                return res.status(404).json({ message: 'No entry found to update' });
+            }
         }
 
         console.log('Entry updated successfully');
@@ -2653,39 +2624,6 @@ app.put('/api/empAvailability', async (req, res) => {
     } catch (error) {
         console.error('Error updating entry:', error);
         return res.status(500).json({ message: 'Error updating entry', error });
-    }
-});
-
-
-app.delete('/api/empAvailability', async (req, res) => {
-    try {
-        await poolConnect; // Ensure the database connection is established
-        const request = pool.request();
-
-        // Extract parameters from the request body
-        const { user_ID, week_ID, day_ID } = req.body;
-
-        // Pass the parameters to the SQL query
-        request.input('user_ID', sql.NVarChar, user_ID);
-        request.input('week_ID', sql.NVarChar, week_ID);
-        request.input('day_ID', sql.NVarChar, day_ID);
-
-        const result = await request.query(`
-            DELETE FROM EmpAvailability
-            WHERE user_ID = @user_ID AND week_ID = @week_ID AND day_ID = @day_ID
-        `);
-
-        if (result.rowsAffected[0] === 0) {
-            console.log('No entry found to delete');
-            return res.status(404).json({ message: 'No entry found to delete' });
-        }
-
-        console.log('Entry deleted successfully');
-        return res.status(200).json({ message: 'Entry deleted successfully' });
-        
-    } catch (error) {
-        console.error('Error deleting entry:', error);
-        return res.status(500).json({ message: 'Error deleting entry', error });
     }
 });
 
@@ -2716,7 +2654,6 @@ app.post('/api/reOrderIngredient', async (req, res) => {
         let row = result.recordset[0];
 
         const poNumber = `PO${uuid.v4()}`;
-
 
         let insertRequest = pool.request();
         await insertRequest
@@ -2830,6 +2767,35 @@ app.post('/api/fulfillDateTime', async (req, res) => {
 });
 
 
+async function getReorderIngredients(){
+    try {
+        const request = pool.request();
+        const result = await request.query(`
+            SELECT iqc.Name, iqc.TotalQuantityInInventory, iqc.Measurement
+            FROM vwIngredientQuantityCheck iqc
+            WHERE iqc.TotalQuantityInInventory <= iqc.ReorderAmount
+            ORDER BY iqc.TotalQuantityInInventory
+        `); //Get info for ingredients where quantity is less than ReorderAmount
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+// GET ingredients where the Amount < ReorderAmount
+app.get('/api/getReorderIngredients', async (req, res) => {
+    try {
+        const lowIngredients = await getReorderIngredients();
+        if (!lowIngredients){
+            res.status(404).send("No ingredients need to be reordered!");
+        }
+        res.json(lowIngredients);
+    } catch(error) {
+        res.status(500).send('Error retrieving low ingredients');
+        res.status(500).json({ error: 'Error retrieving low ingredients', message: error.message });
+    }
+});
 
 app.post('/api/addAvailibility', async (req, res) => {
     try {
@@ -2871,6 +2837,33 @@ app.post('/api/addAvailibility', async (req, res) => {
     }
 });
 
+async function getExpiringIngredients(){  // just selecting the entire view but ordering it by DaysRemaining
+    try{
+        const request = pool.request();
+        const result = await request.query(`
+            SELECT * FROM vwInventoryExpireSoon
+            ORDER BY DaysRemaining
+        `);
+        return result.recordset;
+    } catch (error) {
+        console.error('Error retrieving expiring ingredients:', error);
+        throw error;
+    }
+}
+
+// GET entities in inventory that are expiring in 3 days or less
+app.get('/api/getExpiringIngredients', async (req, res) => {
+    try{
+        const expiringIngredients = await getExpiringIngredients();
+        if (!expiringIngredients){
+            res.status(404).send("No ingredients are expiring!");
+        }
+        res.json(expiringIngredients);
+    } catch(error) {
+        res.status(500).send('Error retrieving expiring ingredients');
+        res.status(500).json({ error: 'Error retrieving expiring ingredients', message: error.message });
+    }
+});
 
 // Initialize the database tables and start the server
 createTables()
