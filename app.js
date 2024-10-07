@@ -2516,6 +2516,35 @@ app.post('/api/fulfillDateTime', async (req, res) => {
 });
 
 
+async function getReorderIngredients(){
+    try {
+        const request = pool.request();
+        const result = await request.query(`
+            SELECT iqc.Name, iqc.TotalQuantityInInventory, iqc.Measurement
+            FROM vwIngredientQuantityCheck iqc
+            WHERE iqc.TotalQuantityInInventory <= iqc.ReorderAmount
+            ORDER BY iqc.TotalQuantityInInventory
+        `); //Get info for ingredients where quantity is less than ReorderAmount
+        return result.recordset;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+// GET ingredients where the Amount < ReorderAmount
+app.get('/api/getReorderIngredients', async (req, res) => {
+    try {
+        const lowIngredients = await getReorderIngredients();
+        if (!lowIngredients){
+            res.status(404).send("No ingredients need to be reordered!");
+        }
+        res.json(lowIngredients);
+    } catch(error) {
+        res.status(500).send('Error retrieving low ingredients');
+        res.status(500).json({ error: 'Error retrieving low ingredients', message: error.message });
+    }
+});
 
 app.post('/api/addAvailibility', async (req, res) => {
     try {
@@ -2557,6 +2586,33 @@ app.post('/api/addAvailibility', async (req, res) => {
     }
 });
 
+async function getExpiringIngredients(){  // just selecting the entire view but ordering it by DaysRemaining
+    try{
+        const request = pool.request();
+        const result = await request.query(`
+            SELECT * FROM vwInventoryExpireSoon
+            ORDER BY DaysRemaining
+        `);
+        return result.recordset;
+    } catch (error) {
+        console.error('Error retrieving expiring ingredients:', error);
+        throw error;
+    }
+}
+
+// GET entities in inventory that are expiring in 3 days or less
+app.get('/api/getExpiringIngredients', async (req, res) => {
+    try{
+        const expiringIngredients = await getExpiringIngredients();
+        if (!expiringIngredients){
+            res.status(404).send("No ingredients are expiring!");
+        }
+        res.json(expiringIngredients);
+    } catch(error) {
+        res.status(500).send('Error retrieving expiring ingredients');
+        res.status(500).json({ error: 'Error retrieving expiring ingredients', message: error.message });
+    }
+});
 
 // Initialize the database tables and start the server
 createTables()
