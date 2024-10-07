@@ -2295,6 +2295,8 @@ app.get('/api/empAvailability', async (req, res) => {
 //just needed an update for the employee availability
 //didnt need a post since we are 'hardcoding' our week into the database
 //The start day is 9-30-2024
+//cURL command to test this is: 
+    //curl -X PUT http://localhost:3030/api/empAvailability -H "Content-Type: application/json" -d "{\"sessionID\": \"02ce9aec-5e93-415b-b7eb-ac553a5c0036\", \"mondayShiftOne\": 1, \"mondayShiftTwo\": 1, \"tuesdayShiftOne\": 1, \"tuesdayShiftTwo\": 1, \"wednesdayShiftOne\": 1, \"wednesdayShiftTwo\": 1, \"thursdayShiftOne\": 1, \"thursdayShiftTwo\": 1, \"fridayShiftOne\": 1, \"fridayShiftTwo\": 1, \"saturdayShiftOne\": 1, \"saturdayShiftTwo\": 1, \"sundayShiftOne\": 1, \"sundayShiftTwo\": 1}" 
 app.put('/api/empAvailability', async (req, res) => {
     await poolConnect; 
 
