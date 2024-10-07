@@ -1461,24 +1461,140 @@ app.delete('/api/ingredient', async (req, res) => {
     }
 });
 
+//UPDATE for Ingredient Table
 app.put('/api/ingredient', async (req, res) => {
-    const ingredientName = req.query.name;
-    const { newIngredientName, otherAttribute } = req.body;
-
-    if (!ingredientName || !newIngredientName) {
-        return res.status(400).json({ error: 'Invalid Request', message: 'Both original ingredient name and new ingredient names are required.' });
-    }
+    //Gets the argruments
+    await poolConnect;
+    const request = pool.request();
 
     try {
-        const updated = await updateIngredient(ingredientName, newIngredient, otherAttribute);
+        const { ingredientID, name, description, measurement, max, 
+            reorder, min, allergen } = req.body;
 
-        if (updated) {
-            res.status(200).json('Ingredient Successfully Updated');
+        if(!ingredientID) {
+            res.status(400).json({message : 'Missing ingredientID'});
+        }
+
+        //Change Ingredient Name
+        if (name) {
+            const changeNameQuery = `UPDATE tblIngredient
+                                    SET Name = @name
+                                    WHERE IngredientID = @ingredientID`;
+            request.input('name', sql.NVarChar, name);
+            request.input('ingredientID', sql.NVarChar, ingredientID);
+            const result = await request.query(changeNameQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Ingredient name failed to update or no ingredient found'});
+            }
+        }
+
+        //Change Ingredient Description
+        if (description) {
+            const descriptionQuery = `UPDATE tblIngredient
+                                    SET Description = @description
+                                    WHERE IngredientID = @ingredientID`;
+            request.input('description', sql.NVarChar, description);
+            request.input('ingredientID', sql.NVarChar, ingredientID);
+            const result = await request.query(descriptionQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Ingredient description failed to update or no ingredient found'});
+            }
+        }
+
+        //Change Ingredient Measurement
+        if (measurement) {
+            const measurementQuery = `UPDATE tblIngredient
+                                    SET Measurement = @measurement
+                                    WHERE IngredientID = @ingredientID`;
+            request.input('measurement', sql.NVarChar, measurement);
+            request.input('ingredientID', sql.NVarChar, ingredientID);
+            const result = await request.query(measurementQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Ingredient measurement failed to update or no ingredient found'});
+            }
+        }
+
+        //Change Ingredient Max Amount
+        if (max) {
+            const maxQuery = `UPDATE tblIngredient
+                                    SET MaxAmount = @max
+                                    WHERE IngredientID = @ingredientID`;
+            request.input('max', sql.Decimal, max);
+            request.input('ingredientID', sql.NVarChar, ingredientID);
+            const result = await request.query(maxQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Ingredient max amount failed to update or no ingredient found'});
+            }
+        }
+
+        //Change Ingredient Reorder Amount
+        if (reorder) {
+            const reorderQuery = `UPDATE tblIngredient
+                                    SET ReorderName = @reorder
+                                    WHERE IngredientID = @ingredientID`;
+            request.input('reorder', sql.Decimal, reorder);
+            request.input('ingredientID', sql.NVarChar, ingredientID);
+            const result = await request.query(reorderQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Ingredient reorder amount failed to update or no ingredient found'});
+            }
+        }
+
+        //Change Ingredient Min Amount
+        if (min) {
+            const minQuery = `UPDATE tblIngredient
+                                    SET MinAmount = @min
+                                    WHERE IngredientID = @ingredientID`;
+            request.input('min', sql.Decimal, min);
+            request.input('ingredientID', sql.NVarChar, ingredientID);
+            const result = await request.query(minQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Ingredient min amount failed to update or no ingredient found'});
+            }
+        }
+
+        //Change Ingredient Allergen
+        if (allergen) {
+            const allergenQuery = `UPDATE tblIngredient
+                                    SET Allergen = @allergen
+                                    WHERE IngredientID = @ingredientID`;
+            request.input('allergen', sql.bit, allergen);
+            request.input('ingredientID', sql.NVarChar, ingredientID);
+            const result = await request.query(allergenQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Ingredient allergen failed to update or no ingredient found'});
+            }
+        }
+
+        if (rowsUpdated) {
+            return res.status(404).json({ message: 'Ingredient Updated Successfully'});
         } else {
-            res.status(404).json('Ingredient not found');
+            return res.status(400).json({ message: 'No Updates Were Made'});
         }
     } catch (error) {
-        res.status(500).json('Error updating ingredient');
+        console.error('Error updating ingredient:', error);
+        return res.status(500).json({ message: 'Error Updating ingredient: ', error});
     }
 });
 
@@ -2235,6 +2351,142 @@ app.post('/api/startBaking', async (req, res) => {
     }
 });
 
+//Takes in vendorID, vendorName, addressID, phoneNumberID, emailID, notes
+//Updates the tblVendor
+app.put('/api/vendor', async (req, res) => {
+    //Gets the argruments
+    await poolConnect;
+    const request = pool.request();
+
+    try {
+        const { vendorID, vendorName, address, phoneNumber, email, notes } = req.body;
+
+        if(!vendorID) {
+            res.status(400).json({message : 'Missing VendorID'});
+        }
+
+        //Change Vendor Name
+        if(vendorName) {
+            const changeNameQuery = `UPDATE tblVendor
+                                    SET VendorName = @vendorName
+                                    WHERE VendorID = @vendorID`;
+            request.input('vendorName', sql.NVarChar, vendorName);
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const result = await request.query(changeNameQuery);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Vendor name failed to update or no vendor found'});
+            }
+        }
+
+        //Change the Address
+        if(address) {
+            //Get Address ID
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const queryAddressID = `SELECT AddressID
+                                FROM tblVendorInfo
+                                WHERE VendorID = @vendorID`;
+            const addressID = request.query(queryAddressID);
+
+            //In VendorInfo
+            request.input('address', sql.NVarChar, address);
+            request.input('addressID', sql.NVarChar, addressID);
+
+            //In Address
+            const changeAddressQuerytblUserAddress = `UPDATE tblUserAddress
+                                                    SET Address = @address
+                                                    WHERE AddressID = @addressID`;
+            const result = await request.query(changeAddressQuerytblUserAddress);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Address failed to update or no address found'});
+            }
+        }
+
+        //Change the Phone Number
+        if(phoneNumber) {
+            //Get Phone Number ID
+            const queryPhoneNumberID = `SELECT PhoneNumberID
+                                    FROM tblVendorInfo
+                                    WHERE VendorID = @vendorID`;
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const phoneNumberID = await request.query(queryPhoneNumberID);
+
+            //Change Phone Number
+            const updateArea = `UPDATE tblPhoneNumber
+                                SET AreaCode = @area
+                                WHERE PhoneNumberID = @phoneNumberID`;
+            request.input('area', sql.NVarChar, phoneNumber.substring(0, 3));
+            request.input('phoneNumberID', sql.NVarChar, phoneNumberID);
+            await request.query(updateArea);
+
+            const updateNumber = `UPDATE tblPhoneNumber
+                                SET Number = @number
+                                WHERE PhoneNumberID = @phoneNumberID`;
+            request.input('number', sql.NVarChar, phoneNumber.substring(3, 9));
+            const result = await request.query(updateNumber);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Phone number failed to update or no phone number found'});
+            }
+        }
+
+        //Change the Email
+        if(email) {
+            //Get the Email
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const emailQuery = `SELECT EmailID 
+                                FROM tblVendorInfo 
+                                WHERE VendorID = @vendorID`;
+            const emailID = await request.query(emailQuery);
+
+            //Change the Email
+            const updateEmail = `UPDATE tblEmail
+                                SET EmailAddress = @emailAddress
+                                WHERE EmailID = @emailID`;
+            request.input('emailID', sql.NVarChar, emailID);
+            request.input('emailAddress', sql.NVarChar, email);
+            const result = await request.query(updateEmail);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Email failed to update or no email found'});
+            }
+        }
+
+        if(notes) {
+            request.input('notes', sql.NVarChar, notes);
+            request.input('vendorID', sql.NVarChar, vendorID);
+            const updateNotes = `UPDATE tblVendorInfo
+                                SET Notes = @notes
+                                WHERE VendorID = @vendorID`;
+            const result = await request.query(updateNotes);
+
+            if (result.rowsAffected[0] === 0) {
+                rowsUpdated = true;
+            } else {
+                return res.status(404).json({ message: 'Notes failed to update or no notes found'});
+            }
+        }
+
+        if (rowsUpdated) {
+            return res.status(404).json({ message: 'Vendor Updated Successfully'});
+        } else {
+            return res.status(400).json({ message: 'No Updates Were Made'});
+        }
+    } catch (error) {
+        console.error('Error updating vendor:', error);
+        return res.status(500).json({ message: 'Error Updating Vendor: ', error});
+    }
+});
+
 //DELETE for Vendor
 app.delete('/api/vendor', async (req, res) => {
     try {
@@ -2289,7 +2541,7 @@ app.get('/api/empAvailability', async (req, res) => {
     } catch (error) {
         res.status(500).send('Error fetching availability');
     }
-});
+})
 
 
 //just needed an update for the employee availability
@@ -2402,7 +2654,6 @@ app.post('/api/reOrderIngredient', async (req, res) => {
         let row = result.recordset[0];
 
         const poNumber = `PO${uuid.v4()}`;
-
 
         let insertRequest = pool.request();
         await insertRequest
