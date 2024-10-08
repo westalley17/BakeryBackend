@@ -569,17 +569,24 @@ app.post('/api/users', async (req, res) => {
 
 async function getEmpBiHours(userID) {
     try {
+        const request = pool.request();
+        let response;
+
         if (!userID) {
-            const request = pool.request();
-            const response = await request.query('SELECT * FROM vwBiWeekHoursSummary');
-            return response.recordset;
-        }
-        else {
-            const request = pool.request();
-            const response = await request.input('UserID', sql.NVarChar, userID)
+            response = await request.query('SELECT * FROM vwBiWeekHoursSummary');
+        } else {
+            response = await request.input('UserID', sql.NVarChar, userID)
                 .query('SELECT * FROM vwBiWeekHoursSummary WHERE userID = @UserID');
-            return response.recordset[0];
         }
+
+        response.recordset.forEach(record => {
+            record.TotalNormalHours = parseFloat(record.TotalNormalHours).toFixed(2);
+            record.TotalOvertimeHours = parseFloat(record.TotalOvertimeHours).toFixed(2);
+            record.TotalHolidayHours = parseFloat(record.TotalHolidayHours).toFixed(2);
+        });
+
+        return userID ? response.recordset[0] : response.recordset;
+
     } catch (error) {
         throw error;
     }
@@ -1963,6 +1970,18 @@ app.get('/api/getExpiringIngredients', async (req, res) => {
         res.status(500).json({ error: 'Error retrieving expiring ingredients', message: error.message });
     }
 });
+
+
+
+// app.delete('/api/removeExpiringIngredients', async (req,res) => {
+
+
+//finish
+
+
+// });
+
+
 
 // Initialize the database tables and start the server
 createTables()
