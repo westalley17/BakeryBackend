@@ -1660,7 +1660,9 @@ async function stockAfterBake(recipe, num) {
         request.input('StockID', sql.NVarChar, stockID);
         await request.query(`
             INSERT INTO tblStock (StockID, ProductID, CreateDateTime, ExpireDateTime, Amount)
-            VALUES (@StockID, @ProductID, GETDATE(), DATEADD(day, 5, GETDATE()), @NewAmount)
+            SELECT @StockID, @ProductID, GETDATE(), DATEADD(day, pr.ShelfLife, GETDATE()), @NewAmount
+            FROM tblProduct pr
+            WHERE pr.ProductID = @ProductID
         `);
         console.log('Stock added successfully.');
     } catch (error) {

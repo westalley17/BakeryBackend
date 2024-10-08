@@ -430,6 +430,7 @@ async function createTables() {
 				Name NVARCHAR(50) NOT NULL,
 				Description NVARCHAR(50) NOT NULL,
 				ProductCategoryID NVARCHAR(50) NOT NULL,
+                ShelfLife INT NOT NULL,
 				FOREIGN KEY (ProductCategoryID) REFERENCES tblProductCategory(ProductCategoryID) ON DELETE CASCADE
 			)
 		`);
