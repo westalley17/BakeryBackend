@@ -1367,8 +1367,9 @@ app.post('/api/clockin', async (req, res) => {
     const { sessionID } = req.body;
 
     if (!sessionID) {
-        return res.status(400).json({ error: 'sessionID is required' });
+        return res.status(400).json({ error: 'Invalid request', message: 'Session ID is required' });
     }
+
     let user;
     if (!(user = await getUserBySession(sessionID))) {
         return res.status(401).json({ error: 'Session has expired!' });
@@ -1378,35 +1379,62 @@ app.post('/api/clockin', async (req, res) => {
         await poolConnect;
         const request = pool.request();
 
-        const currentDateTime = new Date();//gets the current date and time
-        const currentDate = currentDateTime.toISOString().split('T')[0]; //Formats the date as YYYY-MM-DD'T'HOUR:MINUTE:SECOND
+        // Fixed start date as September 30, 2024
+        const startDate = new Date('2024-09-30');
+        const oneWeekLater = new Date(startDate);
+        oneWeekLater.setDate(oneWeekLater.getDate() + 7);  
 
-        const dayResult = await request //Grabs the dayID from tblDay. ALWAYs works if ran in 2024
+        let originalDateTime = new Date();  
+        let mappedDate = new Date(originalDateTime);  
+
+        if (mappedDate < startDate || mappedDate > oneWeekLater) {
+            const diffInMs = mappedDate - startDate;
+            const daysSinceStart = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+            const adjustedDays = ((daysSinceStart % 7 + 7) % 7) + 1; 
+
+            mappedDate = new Date(startDate);
+            mappedDate.setDate(startDate.getDate() + adjustedDays);  
+
+            mappedDate.setHours(originalDateTime.getHours());
+            mappedDate.setMinutes(originalDateTime.getMinutes());
+            mappedDate.setSeconds(originalDateTime.getSeconds());
+
+            console.log(`Original date (${originalDateTime}) mapped to ${mappedDate}`);
+        }
+
+
+        const currentDate = mappedDate.toISOString().split('T')[0]; 
+
+        const dayResult = await request
             .input('currentDate', sql.Date, currentDate)
-            .query(`SELECT dayID FROM tblday WHERE date = @currentDate`);
+            .query(`SELECT dayID FROM tblDay WHERE date = @currentDate`);
 
         if (dayResult.recordset.length === 0) {
             return res.status(404).json({ error: 'No dayID found for today\'s date' });
         }
 
         const dayID = dayResult.recordset[0].dayID;
-        const logID = uuid.v4();
+        const logID = uuid.v4(); 
 
         await request
             .input('logID', sql.NVarChar, logID)
             .input('userID', sql.NVarChar, user.UserID)
             .input('dayID', sql.NVarChar, dayID)
-            .input('clockInTime', sql.DateTime, currentDateTime)
+            .input('clockInTime', sql.DateTime, mappedDate) 
             .input('isHoliday', sql.Bit, 0)
             .query(`INSERT INTO tblLog (logID, userID, dayID, clockInTime, clockOutTime, isHoliday) 
                     VALUES (@logID, @userID, @dayID, @clockInTime, NULL, @isHoliday)`);
 
+        // Respond with success and logID
         res.status(200).json({ logID: logID, message: 'Clock-in time recorded successfully' });
+
     } catch (error) {
         console.error('Error recording clock-in time:', error);
         res.status(500).send('Error recording clock-in time');
     }
 });
+
 
 //POST to add clock out time, userID, and dayID
 app.post('/api/clockout', async (req, res) => {
@@ -1415,6 +1443,7 @@ app.post('/api/clockout', async (req, res) => {
     if (!sessionID) {
         return res.status(400).json({ error: 'sessionID is required' });
     }
+    
     let user;
     if (!(user = await getUserBySession(sessionID))) {
         return res.status(401).json({ error: 'Session has expired!' });
@@ -1424,13 +1453,32 @@ app.post('/api/clockout', async (req, res) => {
         await poolConnect;
         const request = pool.request();
 
+        const startDate = new Date('2024-09-30');
+        const oneWeekLater = new Date(startDate);
+        oneWeekLater.setDate(oneWeekLater.getDate() + 7); 
 
-        const currentDateTime = new Date();  //Gets the current date and time
-        const currentDate = currentDateTime.toISOString().split('T')[0]; //Formats the date as YYYY-MM-DD'T'HOUR:MINUTE:SECOND
+        let originalDateTime = new Date();
+        let mappedDate = new Date(originalDateTime);  
 
-        const dayResult = await request //Grabs the dayID from tblDay. ALWAYs works if ran in 2024
+        if (mappedDate < startDate || mappedDate > oneWeekLater) {
+            const daysSinceStart = Math.floor((mappedDate - startDate) / (1000 * 60 * 60 * 24));
+            const adjustedDays = ((daysSinceStart % 7 + 7) % 7) + 1;
+
+            mappedDate = new Date(startDate);
+            mappedDate.setDate(startDate.getDate() + adjustedDays); 
+
+            mappedDate.setHours(originalDateTime.getHours());
+            mappedDate.setMinutes(originalDateTime.getMinutes());
+            mappedDate.setSeconds(originalDateTime.getSeconds());
+
+            console.log(`Original date (${originalDateTime}) mapped to ${mappedDate}`);
+        }
+
+        const currentDate = mappedDate.toISOString().split('T')[0]; 
+
+        const dayResult = await request
             .input('currentDate', sql.Date, currentDate)
-            .query(`SELECT dayID FROM tblday WHERE date = @currentDate`);
+            .query(`SELECT dayID FROM tblDay WHERE date = @currentDate`);
 
         if (dayResult.recordset.length === 0) {
             return res.status(404).json({ error: 'No dayID found for today\'s date' });
@@ -1441,20 +1489,45 @@ app.post('/api/clockout', async (req, res) => {
         const result = await request
             .input('userID', sql.NVarChar, user.UserID)
             .input('dayID', sql.NVarChar, dayID)
-            .input('clockOutTime', sql.DateTime, currentDateTime)
-            .query(`UPDATE tblLog SET clockOutTime = @clockOutTime 
-                    WHERE userID = @userID AND dayID = @dayID`);
+            .input('clockOutTime', sql.DateTime, mappedDate) 
+            .query(`UPDATE tblLog 
+                    SET clockOutTime = @clockOutTime 
+                    WHERE userID = @userID AND dayID = @dayID AND clockOutTime IS NULL`);
 
         if (result.rowsAffected[0] > 0) {
-            res.status(200).json({ message: 'Clock-out time recorded successfully' });
+            const mergeQuery = `
+                WITH TimeInSeconds AS (
+                    SELECT userID, dayID, 
+                           ROUND(CAST(SUM(DATEDIFF(SECOND, clockInTime, clockOutTime)) AS FLOAT) / 3600 , 2) AS totalWeekHours
+                    FROM tblLog
+                    WHERE clockInTime BETWEEN @startDate AND @endDate
+                    GROUP BY userID, dayID
+                )
+                MERGE tblTotalHours AS target
+                USING TimeInSeconds AS source
+                ON target.userID = source.userID AND target.dayID = source.dayID
+                WHEN MATCHED THEN
+                    UPDATE SET target.totalWeekHours = source.totalWeekHours
+                WHEN NOT MATCHED THEN
+                    INSERT (userID, dayID, totalWeekHours)
+                    VALUES (source.userID, source.dayID, source.totalWeekHours);
+            `;
+
+            await request
+                .input('startDate', sql.Date, startDate)
+                .input('endDate', sql.Date, oneWeekLater)
+                .query(mergeQuery);
+
+            res.status(200).json({ message: 'Clock-out time recorded and total hours updated successfully' });
         } else {
             res.status(404).json({ error: 'Log entry not found' });
         }
     } catch (error) {
-        console.error('Error updating clock-out time:', error);
-        res.status(500).send('Error updating clock-out time');
+        console.error('Error updating clock-out time and total hours:', error);
+        res.status(500).send('Error updating clock-out time and total hours');
     }
 });
+
 
 async function mulRecipe(recipeID, num) {
     try {
