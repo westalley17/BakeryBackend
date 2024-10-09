@@ -1493,25 +1493,49 @@ app.post('/api/clockout', async (req, res) => {
             .query(`UPDATE tblLog 
                     SET clockOutTime = @clockOutTime 
                     WHERE userID = @userID AND dayID = @dayID AND clockOutTime IS NULL`);
-
-        if (result.rowsAffected[0] > 0) {
-            const mergeQuery = `
-                WITH TimeInSeconds AS (
-                    SELECT userID, dayID, 
-                           ROUND(CAST(SUM(DATEDIFF(SECOND, clockInTime, clockOutTime)) AS FLOAT) / 3600 , 2) AS totalWeekHours
-                    FROM tblLog
-                    WHERE clockInTime BETWEEN @startDate AND @endDate
-                    GROUP BY userID, dayID
-                )
-                MERGE tblTotalHours AS target
-                USING TimeInSeconds AS source
-                ON target.userID = source.userID AND target.dayID = source.dayID
-                WHEN MATCHED THEN
-                    UPDATE SET target.totalWeekHours = source.totalWeekHours
-                WHEN NOT MATCHED THEN
-                    INSERT (userID, dayID, totalWeekHours)
-                    VALUES (source.userID, source.dayID, source.totalWeekHours);
-            `;
+                    if (result.rowsAffected[0] > 0) {
+                        const biWeekResult = await request
+                            .input('mappedDate', sql.Date, currentDate)
+                            .query(`
+                                SELECT BiWeekID 
+                                FROM tblBiWeek 
+                                WHERE @mappedDate BETWEEN StartDate AND DATEADD(DAY, 13, StartDate)
+                            `);
+            
+                        if (biWeekResult.recordset.length === 0) {
+                            return res.status(404).json({ error: 'No BiWeekID found for this date range' });
+                        }
+            
+                        const biWeekID = biWeekResult.recordset[0].BiWeekID;
+            
+                        const mergeQuery = `
+                            WITH TimeInSeconds AS (
+                                SELECT l.userID, l.dayID, 
+                                       DATEDIFF(SECOND, l.clockInTime, l.clockOutTime) AS differenceInSeconds,
+                                       b.BiWeekID
+                                FROM tblLog l
+                                JOIN tblBiWeek b 
+                                ON l.clockInTime BETWEEN b.StartDate AND DATEADD(DAY, 13, b.StartDate)
+                            )
+                            MERGE tblHoursWorkedDay AS target
+                            USING (
+                                SELECT userID, dayID, BiWeekID, 
+                                       ROUND(CAST(SUM(differenceInSeconds) AS FLOAT) / 3600, 2) AS totalWeekHours
+                                FROM TimeInSeconds
+                                GROUP BY userID, dayID, BiWeekID
+                            ) AS source
+                            ON target.userID = source.userID AND target.dayID = source.dayID AND target.BiWeekID = source.BiWeekID
+                            WHEN MATCHED THEN
+                                UPDATE SET target.NormalHours = CASE WHEN source.totalWeekHours <= 8 THEN source.totalWeekHours ELSE 8 END,
+                                           target.OvertimeHours = CASE WHEN source.totalWeekHours > 8 THEN source.totalWeekHours - 8 ELSE 0 END,
+                                           target.HolidayHours = 0
+                            WHEN NOT MATCHED THEN
+                                INSERT (HoursID, UserID, DayID, BiWeekID, NormalHours, OvertimeHours, HolidayHours)
+                                VALUES (NEWID(), source.userID, source.dayID, source.BiWeekID, 
+                                        CASE WHEN source.totalWeekHours <= 8 THEN source.totalWeekHours ELSE 8 END, 
+                                        CASE WHEN source.totalWeekHours > 8 THEN source.totalWeekHours - 8 ELSE 0 END, 0);
+                        `;
+            
 
             await request
                 .input('startDate', sql.Date, startDate)
