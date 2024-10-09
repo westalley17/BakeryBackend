@@ -621,6 +621,21 @@ async function createTables() {
             )
         `);
 
+
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblTotalHours')
+            CREATE TABLE tblTotalHours(
+                userID NVARCHAR(50) NOT NULL,
+                dayID NVARCHAR(50) NOT NULL,
+                totalWeekHours DECIMAL (3,2)
+                approved BIT DEFAULT 0,
+                FOREIGN KEY (userID) REFERENCES tblUser(userID) on DELETE CASCADE,
+                FOREIGN KEY (dayID) REFERENCES tblDay(dayID) on DELETE NO ACTION
+        )
+        `);
+
+
+
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
 
 
