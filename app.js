@@ -794,7 +794,11 @@ app.get('/api/ingredient', async (req, res) => {
         const ingredient = result.recordset[0];
 
         if (ingredient) {
-            res.status(200).json(ingredient);   //Sends as a JSON response
+            ingredient.MaxAmount = parseFloat(ingredient.MaxAmount).toFixed(2);
+            ingredient.MinAmount = parseFloat(ingredient.MinAmount).toFixed(2);
+            ingredient.ReorderAmount = parseFloat(ingredient.ReorderAmount).toFixed(2);
+
+            res.status(200).json(ingredient);  // Send the formatted ingredient as a JSON response
         } else {
             res.status(404).send('Ingredient not found');
         }
