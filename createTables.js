@@ -307,6 +307,7 @@ async function createTables() {
                     UserID NVARCHAR(50) NOT NULL,
                     UserType BIT NOT NULL,
                     FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE
+                    FOREIGN KEY (UserType) REFERENCES tblUser(UserType) ON DELETE CASCADE
                 )
             `);
 
