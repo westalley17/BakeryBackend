@@ -634,6 +634,14 @@ async function createTables() {
         `);
 
 
+        await request.query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblDayNumInfo')
+            CREATE TABLE tblDayNumInfo(
+                dayNum NVARCHAR(50) PRIMARY KEY,
+                dayDescription NVARCHAR(50)
+        )
+        `);
+
 
         // ADD HOWEVER MANY OTHER TABLES WE'RE GONNA NEED RIGHT HERE :)
 
