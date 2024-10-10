@@ -971,6 +971,9 @@ app.get('/api/inventoryItems', async (req, res) => {
         let inventoryItems;
         if (category == 'Ingredients') {
             inventoryItems = await getIngredientNames();
+            inventoryItems.forEach((item) => {
+                item.Quantity = parseFloat(item.Quantity).toFixed(2)
+            })
         }
         else if (category == 'Products') {
             inventoryItems = await getProductNames();
