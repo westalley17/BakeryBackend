@@ -2310,8 +2310,12 @@ async function getExpiringIngredients(){  // just selecting the entire view but 
     try{
         const request = pool.request();
         const result = await request.query(`
-            SELECT * FROM vwInventoryExpireSoon
-            ORDER BY DaysRemaining
+            SELECT PONumber, Name, CASE WHEN DaysRemaining < 0 THEN 'Expired' END AS DaysRemaining
+            FROM vwInventoryExpireSoon
+            ORDER BY CASE
+                WHEN ISNUMERIC(DaysRemaining) = 1 THEN 1
+                ELSE 0
+            END, DaysRemaining
         `);
         return result.recordset;
     } catch (error) {
