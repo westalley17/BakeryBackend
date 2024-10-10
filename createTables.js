@@ -622,19 +622,6 @@ async function createTables() {
 
 
         await request.query(`
-            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblTotalHours')
-            CREATE TABLE tblTotalHours(
-                userID NVARCHAR(50) NOT NULL,
-                dayID NVARCHAR(50) NOT NULL,
-                totalWeekHours DECIMAL (5,2),
-                approved BIT DEFAULT 0,
-                FOREIGN KEY (userID) REFERENCES tblUser(userID) on DELETE CASCADE,
-                FOREIGN KEY (dayID) REFERENCES tblDay(dayID) on DELETE NO ACTION
-        )
-        `);
-
-
-        await request.query(`
             IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblDayNumInfo')
             CREATE TABLE tblDayNumInfo(
                 dayNum NVARCHAR(50) PRIMARY KEY,
