@@ -973,16 +973,26 @@ app.get('/api/inventoryItems', async (req, res) => {
             inventoryItems = await getIngredientNames();
             inventoryItems.forEach((item) => {
                 item.Quantity = parseFloat(item.Quantity).toFixed(2)
+                item.Category = "Ingredients";
             })
         }
         else if (category == 'Products') {
             inventoryItems = await getProductNames();
+            inventoryItems.forEach((item) => {
+                item.Category = "Products";
+            })
         }
         else if (category == 'Vendors') {
             inventoryItems = await getVendorNames();
+            inventoryItems.forEach((item) => {
+                item.Category = "Vendors";
+            })
         }
         else if (category == 'Equipment') {
             inventoryItems = await getEquipNames();
+            inventoryItems.forEach((item) => {
+                item.Category = "Equipment";
+            })
         }
         else {
             res.status(404).json({ error: 'Invalid category!' });
