@@ -2350,13 +2350,161 @@ app.get('/api/getExpiringIngredients', async (req, res) => {
 
 
 
-// app.delete('/api/removeExpiringIngredients', async (req,res) => {
+// const recipes = [
+//     {
+//         Name: 'Blue Cake',
+//         Notes: 'A rich and moist chocolate cake.',
+//         ProductCategoryID: '1',
+//         YieldAmount: 1,
+//         PrepTime: '00:30:00',
+//         BakeTime: '00:25:00'
+//     }
+// ];
 
+// const equipmentData = [
+//     { Name: 'Sifter', Quantity: 1 },
+//     { Name: 'Medium mixing bowl', Quantity: 2 },
+//     { Name: 'Large baking sheet', Quantity: 1 }
+// ];
 
-//finish
+// const ingredientData = [
+//     { Name: 'Flour', Quantity: 270 },
+//     { Name: 'Milk', Quantity: 90 },
+//     { Name: 'Orange juice', Quantity: 112 },
+//     { Name: 'Vanilla extract', Quantity: 2 },
+//     { Name: 'Baking soda', Quantity: 40 },
+//     { Name: 'Ground cinnamon', Quantity: 2.25 },
+//     { Name: 'Ground ginger', Quantity: 0.5 },
+//     { Name: 'Ground nutmeg', Quantity: 170 }
+// ];
 
+// const instructionData = [
+//     { Instruction: "Preheat oven to 180°C (350°F) and grease the cake tins." },
+//     { Instruction: "Sift together flour, cornstarch, baking powder, and salt." },
+//     { Instruction: "In a large bowl, add butter, vegetable oil, and sugar." },
+//     { Instruction: "Add eggs one at a time, mixing well between each addition." },
+//     { Instruction: "Add milk, orange juice, and vanilla extract." },
+//     { Instruction: "Add the pre-sifted dry ingredients to the wet ingredients." },
+//     { Instruction: "Distribute the batter evenly into the two prepared cake tins." },
+//     { Instruction: "Bake for 30-35 minutes or until a toothpick inserted comes out clean." },
+//     { Instruction: "Let the cake cool in the tins for 15-20 minutes before transferring to a wire rack." }
+// ];
 
-// });
+app.post('/api/insertFullRecipe', async (req, res) => {
+      // Get the arrays from the frontend
+      const { recipes, equipmentData, ingredientData, instructionData } = req.body;
+
+      // Validate the incoming data
+      if (!recipes || !equipmentData || !ingredientData || !instructionData) {
+          return res.status(400).json({ error: 'Missing required recipe, equipment, ingredient, or instruction data.' });
+      }
+  
+      try {
+          await poolConnect; // Ensure database connection
+
+        for (let recipe of recipes) {
+            const { Name, Notes, YieldAmount, ProductCategoryID, PrepTime, BakeTime } = recipe;
+
+            const recipeUUID = uuid.v4();
+
+            const productRequest = pool.request();
+            await productRequest
+                .input('ProductID', sql.NVarChar(50), recipeUUID)
+                .input('ProductCategoryID', sql.NVarChar(50), ProductCategoryID) 
+                .input('Name', sql.NVarChar(255), Name)
+                .input('Description', sql.NVarChar(1000), Notes)
+                .query(`
+                    INSERT INTO tblProduct (ProductID, ProductCategoryID, Name, Description)
+                    VALUES (@ProductID, @ProductCategoryID, @Name, @Description);
+                `);
+
+            const recipeRequest = pool.request();
+            await recipeRequest
+                .input('RecipeID', sql.NVarChar(50), recipeUUID)
+                .input('Name', sql.NVarChar(255), Name)
+                .input('Notes', sql.NVarChar(1000), Notes)
+                .input('YieldAmount', sql.Int, YieldAmount)
+                .input('ProductID', sql.NVarChar(50), recipeUUID) 
+                .input('PrepTime', sql.NVarChar(8), PrepTime)
+                .input('BakeTime', sql.NVarChar(8), BakeTime)
+                .query(`
+                    INSERT INTO tblRecipe (RecipeID, Name, Notes, YieldAmount, ProductID, PrepTime, BakeTime)
+                    VALUES (@RecipeID, @Name, @Notes, @YieldAmount, @ProductID, CAST(@PrepTime AS TIME), CAST(@BakeTime AS TIME));
+                `);
+
+            for (let ingredient of ingredientData) {
+                const { Name: IngredientName, Quantity } = ingredient;
+
+                const ingredientRequest = pool.request();
+                const ingredientResult = await ingredientRequest
+                    .input('Name', sql.NVarChar(255), IngredientName)
+                    .query(`SELECT IngredientID FROM tblIngredient WHERE Name = @Name;`);
+
+                if (ingredientResult.recordset.length === 0) {
+                    return res.status(404).json({ error: `Ingredient ${IngredientName} not found in the database` });
+                }
+
+                const ingredientID = ingredientResult.recordset[0].IngredientID;
+
+                const insertIngredientRequest = pool.request();
+                await insertIngredientRequest
+                    .input('RecipeID', sql.NVarChar(50), recipeUUID)
+                    .input('IngredientID', sql.NVarChar(50), ingredientID)
+                    .input('Quantity', sql.Decimal(10, 2), Quantity)
+                    .query(`
+                        INSERT INTO tblRecipeIngredient (RecipeID, IngredientID, Quantity)
+                        VALUES (@RecipeID, @IngredientID, @Quantity);
+                    `);
+            }
+
+            for (let equipment of equipmentData) {
+                const { Name: EquipmentName, Quantity } = equipment;
+
+                const equipmentRequest = pool.request();
+                const equipmentResult = await equipmentRequest
+                    .input('Name', sql.NVarChar(255), EquipmentName)
+                    .query(`SELECT EquipmentID FROM tblEquipment WHERE Name = @Name;`);
+
+                if (equipmentResult.recordset.length === 0) {
+                    return res.status(404).json({ error: `Equipment ${EquipmentName} not found in the database` });
+                }
+
+                const equipmentID = equipmentResult.recordset[0].EquipmentID;
+
+                const insertEquipmentRequest = pool.request();
+                await insertEquipmentRequest
+                    .input('RecipeID', sql.NVarChar(50), recipeUUID)
+                    .input('EquipmentID', sql.NVarChar(50), equipmentID)
+                    .input('Quantity', sql.Decimal(10, 2), Quantity)
+                    .query(`
+                        INSERT INTO tblRecipeEquipment (RecipeID, EquipmentID, Quantity)
+                        VALUES (@RecipeID, @EquipmentID, @Quantity);
+                    `);
+            }
+
+            let stepID = 1;
+            for (let instruction of instructionData) {
+                const instructionRequest = pool.request();
+                await instructionRequest
+                    .input('RecipeID', sql.NVarChar(50), recipeUUID)
+                    .input('StepID', sql.Int, stepID)
+                    .input('Instruction', sql.NVarChar(1000), instruction.Instruction)
+                    .query(`
+                        INSERT INTO tblRecipeInstruction (RecipeID, StepID, Instruction)
+                        VALUES (@RecipeID, @StepID, @Instruction);
+                    `);
+
+                stepID++; 
+            }
+        }
+
+        return res.status(201).json({ message: 'Recipe, ingredients, equipment, and instructions inserted successfully' });
+
+    } catch (error) {
+        console.error('Error inserting recipe data:', error);
+        return res.status(500).json({ error: 'An error occurred while processing the request', message: error.message });
+    }
+});
 
 
 
