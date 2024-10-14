@@ -1050,7 +1050,7 @@ app.get('/api/productInfo', async (req, res) => {
             const request = pool.request();
             let query = '';
             request.input('ProductID', sql.NVarChar, productID);
-            query = 'SELECT * FROM vwProductInfo WHERE ProductID = @ProductID';
+            query = 'SELECT * FROM tblProduct WHERE ProductID = @ProductID';
 
             const result = await request.query(query);
             const productInfo = result.recordset[0]; // Retrieve the first record
@@ -1106,7 +1106,7 @@ app.get('/api/equipmentInfo', async (req, res) => {
             const request = pool.request();
             let query = '';
             request.input('EquipmentID', sql.NVarChar, equipmentID);
-            query = 'SELECT * FROM vwEquipmentInfo WHERE EquipmentID = @EquipmentID';
+            query = 'SELECT * FROM tblKitchenEquipment WHERE EquipmentID = @EquipmentID';
 
             const result = await request.query(query);
             const equipmentInfo = result.recordset[0]; // Retrieve the first record
