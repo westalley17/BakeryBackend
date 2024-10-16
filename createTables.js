@@ -26,7 +26,7 @@ async function createTables() {
                 CREATE TABLE tblAddressType (
                     TypeID NVARCHAR(50) PRIMARY KEY,
                     Description NVARCHAR(50),
-                    Active BIT
+                    Active BIT NOT NULL
                 )
             `);
 
@@ -36,7 +36,7 @@ async function createTables() {
                 CREATE TABLE tblEmailType (
                     TypeID NVARCHAR(50) PRIMARY KEY,
                     Description NVARCHAR(50),
-                    Active BIT
+                    Active BIT NOT NULL
                 )
             `);
 
@@ -55,7 +55,7 @@ async function createTables() {
                 CREATE TABLE tblPhoneNumberTypes (
                     TypeID NVARCHAR(50) PRIMARY KEY,
                     Description NVARCHAR(50),
-                    Active BIT
+                    Active BIT NOT NULL
                 )
             `);
 
@@ -140,8 +140,8 @@ async function createTables() {
                     EmailAddress NVARCHAR(320),
                     UserID NVARCHAR(50),
                     TypeID NVARCHAR(50),
-                    Valid BIT,
-                    UserType BIT,
+                    Valid BIT NOT NULL,
+                    UserType BIT NOT NULL,
                     vendorID NVARCHAR(50),
                     UNIQUE (EmailAddress),
                     FOREIGN KEY (TypeID) REFERENCES tblEmailType(TypeID),
@@ -203,7 +203,7 @@ async function createTables() {
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourly')
                 CREATE TABLE tblHourly (
                     TypeID NVARCHAR(50),
-                    HourRate DECIMAL(5,2),
+                    HourRate DECIMAL(5,2) NOT NULL,
                     FOREIGN KEY (TypeID) REFERENCES tblPayType(TypeID) ON DELETE CASCADE
                 )
             `);
@@ -213,7 +213,7 @@ async function createTables() {
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourlyHoliday')
                 CREATE TABLE tblHourlyHoliday (
                     TypeID NVARCHAR(50),
-                    HourRateHoliday DECIMAL(5,2),
+                    HourRateHoliday DECIMAL(5,2) NOT NULL,
                     FOREIGN KEY (TypeID) REFERENCES tblPayType(TypeID) ON DELETE CASCADE
                 )
             `);
@@ -223,7 +223,7 @@ async function createTables() {
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblHourlyOvertime')
                 CREATE TABLE tblHourlyOvertime (
                     TypeID NVARCHAR(50),
-                    HourRateOT DECIMAL(5,2),
+                    HourRateOT DECIMAL(5,2) NOT NULL,
                     FOREIGN KEY (TypeID) REFERENCES tblPayType(TypeID) ON DELETE CASCADE
                 )
             `);
@@ -251,7 +251,7 @@ async function createTables() {
                     PayID NVARCHAR(50) PRIMARY KEY,
                     UserID NVARCHAR(50),
                     TypeID NVARCHAR(50),
-                    UserType BIT,
+                    UserType BIT NOT NULL,
                     UNIQUE (UserID),
                     FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE,
                     FOREIGN KEY (TypeID) REFERENCES tblPayType(TypeID) ON DELETE CASCADE
@@ -266,9 +266,9 @@ async function createTables() {
                     AreaCode NVARCHAR(3),
                     Number NVARCHAR(7),
                     TypeID NVARCHAR(50),
-                    Valid BIT,
+                    Valid BIT NOT NULL,
                     UserID NVARCHAR(50),
-                    UserType BIT,
+                    UserType BIT NOT NULL,
                     vendorID NVARCHAR(50),
                     FOREIGN KEY (TypeID) REFERENCES tblPhoneNumberTypes(TypeID) ON DELETE CASCADE,
                     FOREIGN KEY (UserID) REFERENCES tblUser(UserID) ON DELETE CASCADE,
@@ -294,7 +294,7 @@ async function createTables() {
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tblSalary')
                 CREATE TABLE tblSalary (
                     TypeID NVARCHAR(50),
-                    SalaryRate DECIMAL(10,2),
+                    SalaryRate DECIMAL(10,2) NOT NULL,
                     FOREIGN KEY (TypeID) REFERENCES tblPayType(TypeID) ON DELETE CASCADE
                 )
             `);
@@ -343,8 +343,8 @@ async function createTables() {
                     UserID NVARCHAR(50),
                     TypeID NVARCHAR(50),
                     StateID NVARCHAR(50),
-                    Valid BIT,
-                    UserType BIT,
+                    Valid BIT NOT NULL,
+                    UserType BIT NOT NULL,
                     vendorID NVARCHAR(50),
                     FOREIGN KEY (TypeID) REFERENCES tblAddressType(TypeID),
                     FOREIGN KEY (StateID) REFERENCES tblState(StateID),
@@ -442,7 +442,7 @@ async function createTables() {
 				ProductID NVARCHAR(50) NOT NULL,
 				CreateDateTime DATETIME NOT NULL,
 				ExpireDateTime DATETIME NOT NULL,
-				Amount DECIMAL(10,2),
+				Amount DECIMAL(10,2) NOT NULL,
 				FOREIGN KEY (ProductID) REFERENCES tblProduct(ProductID)
 			)
 		`);
@@ -582,7 +582,7 @@ async function createTables() {
             CREATE TABLE tblVendorIngredient(
                 VendorID nvarchar(50) NOT NULL,
                 IngredientID nvarchar(50) NOT NULL,
-                PricePerUnit DECIMAL(10,4),
+                PricePerUnit DECIMAL(10,4) NOT NULL,
                 PRIMARY KEY (VendorID, IngredientID),
                 FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID) ON DELETE CASCADE,
                 FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
@@ -596,9 +596,9 @@ async function createTables() {
                 PONumber nvarchar(50) PRIMARY KEY,
                 VendorID nvarchar(50) NOT NULL,
                 IngredientID nvarchar(50) NOT NULL,
-                Quantity DECIMAL(10,2),
-                Price DECIMAL (10,2),
-                CreateDateTime DateTime,
+                Quantity DECIMAL(10,2) NOT NULL,
+                Price DECIMAL (10,2) NOT NULL,
+                CreateDateTime DateTime NOT NULL,
                 FulfillDateTime DateTime DEFAULT NULL,
                 FOREIGN KEY (VendorID) REFERENCES tblVendor(VendorID),
                 FOREIGN KEY (IngredientID) REFERENCES tblIngredient(IngredientID)
