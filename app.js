@@ -1069,6 +1069,28 @@ app.get('/api/productInfo', async (req, res) => {
     }
 });
 
+//Get FINISHED product info
+app.get('/api/finishedProfuctInfo', async (req, res) => {
+    try{
+        const requrest = pool.requrest();
+        let query = '';
+        query = 'SELECT * FROM vwProductInfo';
+
+        const result = await request.query(query);
+        const finishedProductInfo = result.recordset;
+
+        if (finishedProductInfo) {
+            res.status(200).json(finishedProductInfo);
+        } else {
+            res.status(404).send('No finished products found.');
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching finished product information');
+    }
+});
+
 //Get Vendor Info
 app.get('/api/vendorInfo', async (req, res) => {
     const { vendorID } = req.query;
