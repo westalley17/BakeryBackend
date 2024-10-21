@@ -1304,6 +1304,44 @@ app.post('/api/product', async (req, res) => {
     }
 });
 
+// Function to delete a product
+async function deleteProduct(ProductID) {
+    try {
+        await poolConnect; // Ensure the pool is connected
+        const request = pool.request();
+
+        // Delete query based on ProductID
+        const query = `
+            DELETE FROM tblProduct
+            WHERE ProductID = @ProductID
+        `;
+
+        request.input('ProductID', sql.NVarChar, ProductID);
+        await request.query(query);
+
+        console.log('Product deleted successfully');
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw error;
+    }
+}
+
+// DELETE endpoint to remove a product
+app.delete('/api/productDelete', async (req, res) => {
+    const { ProductID } = req.body;
+
+    if (!ProductID) {
+        return res.status(400).send('Product ID is required');
+    }
+
+    try {
+        await deleteProduct(ProductID);
+        res.status(200).send('Product deleted successfully');
+    } catch (error) {
+        res.status(500).send('Internal server error');
+    }
+});
+
 // POST endpoint to add a recipe
 app.post('/api/recipe', async (req, res) => {
     const { Name, Notes, YieldAmount, ProductID, PrepTime, BakeTime } = req.body;
